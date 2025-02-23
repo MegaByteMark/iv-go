@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:ivgo/pages/stopwatch_list_page.dart';
 
@@ -16,6 +17,9 @@ class IVGoApp extends StatelessWidget {
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.lightBlue),
         useMaterial3: true,
+        cupertinoOverrideTheme: const CupertinoThemeData(
+          primaryColor: Colors.lightBlue,
+        ),
       ),
       home: const StopwatchListPage(title: 'Active Stopwatches'),
     );
