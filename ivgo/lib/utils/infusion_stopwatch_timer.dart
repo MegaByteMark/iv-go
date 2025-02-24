@@ -1,11 +1,12 @@
 import 'dart:async';
 
-class StopwatchTimer {
-  StopwatchTimer(this.id, this.volume, this.dropFactor, this.flowRate) {
+class InfusionStopwatchTimer {
+  InfusionStopwatchTimer(this.id, this.title, this.volume, this.dropFactor, this.flowRate) {
     _initialize();
   }
 
   final int id;
+  final String title;
   final double volume, dropFactor;
   late double flowRate, infusedVolume;
   late Duration durationInSeconds, remainingSeconds;
@@ -14,7 +15,7 @@ class StopwatchTimer {
   Map<double, Duration> infusionData = {};
 
   /// Starts the stopwatch timer if it is not already running.
-  /// 
+  ///
   /// This method sets the `isRunning` flag to true and ensures that the flow rate exists in the infusion data map.
   /// It then starts a periodic timer that increments the infusion data's duration by one second
   /// every second. It also calculates the remaining seconds and stops the timer if the remaining
@@ -36,8 +37,8 @@ class StopwatchTimer {
   }
 
   /// Stops the timer if it is currently running.
-  /// 
-  /// This method checks if the timer is running, and if so, it sets the 
+  ///
+  /// This method checks if the timer is running, and if so, it sets the
   /// `isRunning` flag to false and cancels the timer.
   void stop() {
     if (isRunning) {
@@ -83,7 +84,7 @@ class StopwatchTimer {
   }
 
   /// Ensures that the `flowRate` key exists in the `infusionData` map.
-  /// If the `flowRate` key does not exist, it initializes it with a 
+  /// If the `flowRate` key does not exist, it initializes it with a
   /// `Duration` of 0 seconds.
   void _ensureFlowRateExists() {
     if (!infusionData.containsKey(flowRate)) {
@@ -115,15 +116,15 @@ class StopwatchTimer {
     remainingSeconds = _computeInfusionDurationInSeconds(remainingVolume);
   }
 
-  /// Calculates the total infused volume in milliliters (mL) based on the 
+  /// Calculates the total infused volume in milliliters (mL) based on the
   /// infusion data entries and updates the `infusedVolume` variable.
-  /// 
-  /// This method iterates through each entry in the `infusionData` map, 
-  /// computes the infused volume for each entry using the `_computeInfusedVolumeInmL` 
+  ///
+  /// This method iterates through each entry in the `infusionData` map,
+  /// computes the infused volume for each entry using the `_computeInfusedVolumeInmL`
   /// method, and accumulates the result.
-  /// 
-  /// The `infusionData` map contains flowRate in gtts/min as the key and the infusion 
-  /// duration in seconds at that rate as the value. The `dropFactor` is used 
+  ///
+  /// The `infusionData` map contains flowRate in gtts/min as the key and the infusion
+  /// duration in seconds at that rate as the value. The `dropFactor` is used
   /// in the computation of the infused volume which indicates how many drips are required per mL of infusion.
   void _calculateInfusedVolumemL() {
     double result = 0;
