@@ -148,7 +148,7 @@ class InfusionStopwatchTimer {
   /// Returns a [Duration] object representing the infusion duration in seconds.
   Duration _computeInfusionDurationInSeconds(double targetVolume) {
     if (targetVolume > 0) {
-      return Duration(seconds: (((targetVolume * dropFactor) / flowRate).ceil()) * 60);
+      return Duration(seconds: (((targetVolume * dropFactor) / flowRate) * 60).toInt());
     }
 
     return Duration(seconds: 0);

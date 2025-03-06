@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gap/gap.dart';
 import 'package:ivgo/utils/infusion_stopwatch_timer.dart';
 
 class InfusionRow extends StatelessWidget {
@@ -9,6 +10,9 @@ class InfusionRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    int remainingMinutes = timer.remainingSeconds.inSeconds ~/ 60;
+    int remainingSeconds = timer.remainingSeconds.inSeconds % 60;
+
     return ListTile(
       title: Text(
         timer.title,
@@ -17,9 +21,10 @@ class InfusionRow extends StatelessWidget {
       subtitle: Text.rich(
         TextSpan(
           children: [
-            TextSpan(text: 'Volume: ${timer.volume.toStringAsFixed(1)} ml, Flow Rate: ${timer.flowRate.toStringAsFixed(1)} ml/hr, '),
+            TextSpan(text: 'Volume: ${timer.volume.toStringAsFixed(1)} ml'),
+            TextSpan(text: ' '), // Add space between TextSpans
             TextSpan(
-              text: 'Infused: ${timer.infusedVolume.toStringAsFixed(1)} ml',
+              text: 'Infused: ${timer.infusedVolume.toStringAsFixed(1)} ml, Remaining: ${remainingMinutes.toString().padLeft(2, '0')}:${remainingSeconds.toString().padLeft(2, '0')}',
               style: TextStyle(fontWeight: FontWeight.bold),
             ),
           ],
