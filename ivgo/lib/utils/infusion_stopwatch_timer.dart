@@ -7,14 +7,98 @@ class InfusionStopwatchTimer {
     _initialize();
   }
 
-  final int id;
+  late int id;
   late InfusionCharacteristics characteristics;
   late String title;
-  late double infusedVolume;
-  late Duration durationInSeconds, remainingSeconds;
-  Timer? timer;
-  bool isRunning = false;
-  Map<InfusionCharacteristics, Duration> infusionData = {};
+  double? infusedVolume;
+  Duration? durationInSeconds, remainingSeconds;
+  DateTime? firstStartTime;
+  Timer? _timer;
+  bool _isRunning = false;
+  bool get isRunning => _isRunning;
+  Map<InfusionCharacteristics, Duration> _infusionData = {};
+
+  /// Restores the timer's state from app restart.
+  ///
+  /// This method is called when the app is reopened. It checks if the timer was running before the app was closed.
+  /// If it was running, it works out what elapsed duration was missed and updates the infusionData accordingly.
+  ///
+  void onRestore() {
+    if (_isRunning) {
+      final int elapsedSecondsSinceFirstStart = DateTime.now().difference(firstStartTime!).inSeconds;
+      _calculateRemainingSeconds();
+      final int secondsWhilstAsleep = elapsedSecondsSinceFirstStart - remainingSeconds!.inSeconds;
+      _infusionData[characteristics] = Duration(seconds: _infusionData[characteristics]!.inSeconds + secondsWhilstAsleep);
+    }
+
+    _ensureTimerIsRunning();
+  }
+
+  /// Converts the timer's state to a map of data.
+  ///
+  /// This method is called when the app is closed. It converts the timer's state to a map of data
+  /// that can be stored in a database or file. The data map contains the following:
+  /// - id: The timer's unique identifier.
+  /// - title: The title of the timer.
+  /// - characteristics: The infusion characteristics of the timer.
+  /// - infusedVolume: The volume of the IV fluid that has been infused.
+  /// - durationInSeconds: The total duration of the infusion in seconds.
+  /// - remainingSeconds: The remaining duration of the infusion in seconds.
+  /// - firstStartTime: The time when the timer was first started.
+  /// - isRunning: A boolean flag indicating if the timer is currently running.
+  /// - infusionData: A map containing the infusion characteristics as the key and the infusion duration in seconds at that rate as the value.
+  InfusionStopwatchTimer.fromJson(Map<String, dynamic> json)
+      : id = json['id'],
+        title = json['title'],
+        characteristics = InfusionCharacteristics.fromJson(json['characteristics']),
+        infusedVolume = json['infusedVolume'],
+        durationInSeconds = Duration(seconds: json['durationInSeconds']),
+        remainingSeconds = Duration(seconds: json['remainingSeconds']),
+        firstStartTime = json['firstStartTime'] != null ? DateTime.parse(json['firstStartTime']) : null,
+        _isRunning = json['isRunning'],
+        _infusionData = json['infusionData'].map((key, value) => MapEntry(InfusionCharacteristics.fromJson(key), Duration(seconds: value)));
+
+  /// Converts the timer's state to a map of data.
+  ///
+  /// This method is called when the app is closed. It converts the timer's state to a map of data
+  /// that can be stored in a database or file. The data map contains the following:
+  /// - id: The timer's unique identifier.
+  /// - title: The title of the timer.
+  /// - characteristics: The infusion characteristics of the timer.
+  /// - infusedVolume: The volume of the IV fluid that has been infused.
+  /// - durationInSeconds: The total duration of the infusion in seconds.
+  /// - remainingSeconds: The remaining duration of the infusion in seconds.
+  /// - firstStartTime: The time when the timer was first started.
+  /// - isRunning: A boolean flag indicating if the timer is currently running.
+  /// - infusionData: A map containing the infusion characteristics as the key and the infusion duration in seconds at that rate as the value.
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'title': title,
+      'characteristics': characteristics.toJson(),
+      'infusedVolume': infusedVolume,
+      'durationInSeconds': durationInSeconds!.inSeconds,
+      'remainingSeconds': remainingSeconds!.inSeconds,
+      'firstStartTime': firstStartTime?.toIso8601String(),
+      'isRunning': _isRunning,
+      'infusionData': _infusionData.map((key, value) => MapEntry(key.toJson(), value.inSeconds)),
+    };
+  }
+
+  /// Ensures that the timer's periodic timer is running.
+  ///
+  /// This method checks if the timer is running and if the periodic timer is not already running.
+  /// If the timer is running and the periodic timer is not running, it starts the periodic timer.
+  void _ensureTimerIsRunning() {
+    _timer ??= Timer.periodic(const Duration(seconds: 1), (timer) {
+      _infusionData[characteristics] = Duration(seconds: _infusionData[characteristics]!.inSeconds + 1);
+      _calculateRemainingSeconds();
+
+      if (remainingSeconds!.inSeconds <= 0 && infusedVolume! >= characteristics.volume) {
+        stop();
+      }
+    });
+  }
 
   /// Starts the stopwatch timer if it is not already running.
   ///
@@ -23,18 +107,11 @@ class InfusionStopwatchTimer {
   /// every second. It also calculates the remaining seconds and stops the timer if the remaining
   /// seconds are less than or equal to zero.
   void start() {
-    if (!isRunning) {
-      isRunning = true;
+    if (!_isRunning) {
+      firstStartTime ??= DateTime.now();
+      _isRunning = true;
       _ensureInfusionDataEntryExists();
-
-      timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-        infusionData[characteristics] = Duration(seconds: infusionData[characteristics]!.inSeconds + 1);
-        _calculateRemainingSeconds();
-
-        if (remainingSeconds.inSeconds <= 0 && infusedVolume >= characteristics.volume) {
-          stop();
-        }
-      });
+      _ensureTimerIsRunning();
     }
   }
 
@@ -43,9 +120,9 @@ class InfusionStopwatchTimer {
   /// This method checks if the timer is running, and if so, it sets the
   /// `isRunning` flag to false and cancels the timer.
   void stop() {
-    if (isRunning) {
-      isRunning = false;
-      timer?.cancel();
+    if (_isRunning) {
+      _isRunning = false;
+      _timer?.cancel();
     }
   }
 
@@ -54,7 +131,7 @@ class InfusionStopwatchTimer {
   void reset() {
     stop();
 
-    infusionData.clear();
+    _infusionData.clear();
 
     _initialize();
   }
@@ -89,8 +166,8 @@ class InfusionStopwatchTimer {
   /// If the `characteristics` key does not exist, it initializes it with a
   /// `Duration` of 0 seconds.
   void _ensureInfusionDataEntryExists() {
-    if (!infusionData.containsKey(characteristics)) {
-      infusionData[characteristics] = Duration(seconds: 0);
+    if (!_infusionData.containsKey(characteristics)) {
+      _infusionData[characteristics] = Duration(seconds: 0);
     }
   }
 
@@ -109,7 +186,7 @@ class InfusionStopwatchTimer {
 
     _calculateInfusedVolumemL();
 
-    remainingVolume = characteristics.volume - infusedVolume;
+    remainingVolume = characteristics.volume - infusedVolume!;
 
     if (remainingVolume < 0) {
       remainingVolume = 0;
@@ -131,7 +208,7 @@ class InfusionStopwatchTimer {
   void _calculateInfusedVolumemL() {
     double result = 0;
 
-    for (final entry in infusionData.entries) {
+    for (final entry in _infusionData.entries) {
       result += _computeInfusedVolumeInmL(entry.value.inSeconds, entry.key.flowRate, entry.key.dropFactor);
     }
 

@@ -1,10 +1,12 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:ivgo/models/infusion_characteristics.dart';
 import 'package:ivgo/utils/infusion_stopwatch_timer.dart';
 import 'package:gap/gap.dart';
 import 'package:ivgo/widgets/infusion_row.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class StopwatchListPage extends StatefulWidget {
   const StopwatchListPage({super.key, required this.title});
@@ -19,11 +21,39 @@ class _StopwatchListPageState extends State<StopwatchListPage> {
   List<InfusionStopwatchTimer> infusionTimers = [];
   Timer? refreshTimer;
 
+  Future<void> saveState() async {
+    final prefs = await SharedPreferences.getInstance();
+    final List<String> timersJson = infusionTimers.map((timer) => jsonEncode(timer.toJson())).toList();
+    await prefs.setStringList('infusionTimers', timersJson);
+  }
+
+  Future<void> loadState() async {
+    final prefs = await SharedPreferences.getInstance();
+    final List<String>? timersJson = prefs.getStringList('infusionTimers');
+
+    if (timersJson != null) {
+      infusionTimers = timersJson.map((json) => InfusionStopwatchTimer.fromJson(jsonDecode(json))).toList();
+
+      for (final timer in infusionTimers) {
+        timer.onRestore();
+      }
+    }
+  }
+
   @override
   void initState() {
     super.initState();
 
+    loadState();
     _manageRefreshTimer();
+  }
+
+  @override
+  void dispose() {
+    saveState();
+
+    refreshTimer?.cancel();
+    super.dispose();
   }
 
   @override
@@ -189,7 +219,7 @@ class _StopwatchListPageState extends State<StopwatchListPage> {
                     flowRate: flowRate,
                   ));
                 }
-                                
+
                 Navigator.of(context).pop();
 
                 setState(() {

@@ -8,15 +8,24 @@ class InfusionCharacteristics {
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
     if (other is! InfusionCharacteristics) return false;
-    return volume == other.volume &&
-        dropFactor == other.dropFactor &&
-        flowRate == other.flowRate;
+    return volume == other.volume && dropFactor == other.dropFactor && flowRate == other.flowRate;
   }
 
   @override
   int get hashCode {
-    return volume.hashCode ^
-        dropFactor.hashCode ^
-        flowRate.hashCode;
+    return volume.hashCode ^ dropFactor.hashCode ^ flowRate.hashCode;
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'volume': volume,
+      'dropFactor': dropFactor,
+      'flowRate': flowRate,
+    };
+  }
+
+  InfusionCharacteristics.fromJson(Map<String, dynamic> json)
+      : volume = json['volume'],
+        dropFactor = json['dropFactor'],
+        flowRate = json['flowRate'];
 }

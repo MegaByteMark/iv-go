@@ -10,8 +10,8 @@ class InfusionRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    int remainingMinutes = timer.remainingSeconds.inSeconds ~/ 60;
-    int remainingSeconds = timer.remainingSeconds.inSeconds % 60;
+    int remainingMinutes = timer.remainingSeconds!.inSeconds ~/ 60;
+    int remainingSeconds = timer.remainingSeconds!.inSeconds % 60;
 
     return ListTile(
       title: Text(
@@ -24,7 +24,7 @@ class InfusionRow extends StatelessWidget {
             TextSpan(text: 'Volume: ${timer.characteristics.volume.toStringAsFixed(1)} ml'),
             TextSpan(text: ' '), // Add space between TextSpans
             TextSpan(
-              text: 'Infused: ${timer.infusedVolume.toStringAsFixed(1)} ml, Remaining: ${remainingMinutes.toString().padLeft(2, '0')}:${remainingSeconds.toString().padLeft(2, '0')}',
+              text: 'Infused: ${timer.infusedVolume!.toStringAsFixed(1)} ml, Remaining: ${remainingMinutes.toString().padLeft(2, '0')}:${remainingSeconds.toString().padLeft(2, '0')}',
               style: TextStyle(fontWeight: FontWeight.bold),
             ),
           ],
@@ -37,7 +37,7 @@ class InfusionRow extends StatelessWidget {
           border: Border.all(color: Colors.black),
         ),
         child: FractionallySizedBox(
-          heightFactor: (timer.infusedVolume / timer.characteristics.volume).clamp(0.0, 1.0),
+          heightFactor: (timer.infusedVolume! / timer.characteristics.volume).clamp(0.0, 1.0),
           alignment: Alignment.bottomCenter,
           child: Container(
             width: 10,
@@ -57,7 +57,7 @@ class InfusionRow extends StatelessWidget {
               }
             },
           ),
-          if (timer.infusedVolume < timer.characteristics.volume)
+          if (timer.infusedVolume! < timer.characteristics.volume)
             IconButton(
               icon: Icon(timer.isRunning ? Icons.pause : Icons.play_arrow),
               onPressed: () {
