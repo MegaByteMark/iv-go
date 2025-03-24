@@ -75,7 +75,9 @@ class _StopwatchListPageState extends State<StopwatchListPage> {
       ),
       body: bodyWidget,
       floatingActionButton: FloatingActionButton(
-        onPressed: _addNewTimer,
+        onPressed: () async {
+          await _addOrEditTimer(null);
+        },
         tooltip: 'Add New Infusion',
         child: const Icon(Icons.add),
       ),
@@ -98,17 +100,25 @@ class _StopwatchListPageState extends State<StopwatchListPage> {
     }
   }
 
-  void _addNewTimer() {
-    showDialog(
+  Future<void> _addOrEditTimer(InfusionStopwatchTimer? theTimer) async {
+    await showDialog(
       context: context,
       builder: (BuildContext context) {
+        bool isNewTimer = theTimer == null;
         final TextEditingController titleController = TextEditingController();
         final TextEditingController volumeController = TextEditingController();
         final TextEditingController dropFactorController = TextEditingController();
         final TextEditingController flowRateController = TextEditingController();
 
+        if (!isNewTimer) {
+          titleController.text = theTimer?.title ?? '';
+          volumeController.text = theTimer?.volume.toString() ?? '';
+          dropFactorController.text = theTimer?.dropFactor.toString() ?? '';
+          flowRateController.text = theTimer?.flowRate.toString() ?? '';
+        }
+
         return AlertDialog(
-          title: const Text('New Infusion'),
+          title: (isNewTimer) ? Text('New Infusion') : Text('Edit Infusion :: ${theTimer!.title}'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
@@ -145,26 +155,33 @@ class _StopwatchListPageState extends State<StopwatchListPage> {
               },
             ),
             TextButton(
-              child: const Text('Add'),
+              child: (isNewTimer) ? Text('Add') : Text('Save'),
               onPressed: () {
                 final String title = titleController.text;
                 final double volume = double.tryParse(volumeController.text) ?? 0.0;
                 final double dropFactor = double.tryParse(dropFactorController.text) ?? 0.0;
                 final double flowRate = double.tryParse(flowRateController.text) ?? 0.0;
 
-                final newTimer = InfusionStopwatchTimer(
-                  infusionTimers.length + 1,
-                  title,
-                  volume,
-                  dropFactor,
-                  flowRate,
-                );
+                if (isNewTimer) {
+                  theTimer = InfusionStopwatchTimer(
+                    infusionTimers.length + 1,
+                    title,
+                    volume,
+                    dropFactor,
+                    flowRate,
+                  );
 
-                setState(() {
-                  infusionTimers.add(newTimer);
-                  newTimer.start();
-                  _manageRefreshTimer();
-                });
+                  setState(() {
+                    infusionTimers.add(theTimer!);
+                    theTimer!.start();
+                    _manageRefreshTimer();
+                  });
+                } else {
+                  theTimer!.title = title;
+                  theTimer!.volume = volume;
+                  theTimer!.dropFactor = dropFactor;
+                  theTimer!.flowRate = flowRate;
+                }
 
                 Navigator.of(context).pop();
               },

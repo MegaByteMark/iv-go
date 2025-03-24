@@ -1,18 +1,19 @@
 import 'dart:async';
+import 'package:ivgo/models/infusion_characteristics.dart';
 
 class InfusionStopwatchTimer {
-  InfusionStopwatchTimer(this.id, this.title, this.volume, this.dropFactor, this.flowRate) {
+  InfusionStopwatchTimer(this.id, this.title, this.characteristics) {
     _initialize();
   }
 
   final int id;
-  final String title;
-  final double volume, dropFactor;
-  late double flowRate, infusedVolume;
+  late InfusionCharacteristics characteristics;
+  late String title;
+  late double infusedVolume;
   late Duration durationInSeconds, remainingSeconds;
   Timer? timer;
   bool isRunning = false;
-  Map<double, Duration> infusionData = {};
+  Map<InfusionCharacteristics, Duration> infusionData = {};
 
   /// Starts the stopwatch timer if it is not already running.
   ///
@@ -23,10 +24,10 @@ class InfusionStopwatchTimer {
   void start() {
     if (!isRunning) {
       isRunning = true;
-      _ensureFlowRateExists();
+      _ensureInfusionDataEntryExists();
 
       timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-        infusionData[flowRate] = Duration(seconds: infusionData[flowRate]!.inSeconds + 1);
+        infusionData[characteristics] = Duration(seconds: infusionData[characteristics]!.inSeconds + 1);
         _calculateRemainingSeconds();
 
         if (remainingSeconds.inSeconds <= 0) {
@@ -66,29 +67,28 @@ class InfusionStopwatchTimer {
   ///
   /// Parameters:
   /// - [newFlowRate]: The new flow rate value to be set.
-  void changeFlowRate(double newFlowRate) {
-    flowRate = newFlowRate;
+  void changeCharacteristics(InfusionCharacteristics newCharacteristics) {
+    //TODO: Implement this method
 
-    _initialize();
   }
 
   /// Initializes the stopwatch timer by ensuring the flow rate exists,
   /// computing the infusion duration in seconds based on the given volume,
   /// and calculating the remaining seconds.
   void _initialize() {
-    _ensureFlowRateExists();
+    _ensureInfusionDataEntryExists();
 
-    durationInSeconds = _computeInfusionDurationInSeconds(volume);
+    durationInSeconds = _computeInfusionDurationInSeconds(characteristics.volume);
 
     _calculateRemainingSeconds();
   }
 
-  /// Ensures that the `flowRate` key exists in the `infusionData` map.
-  /// If the `flowRate` key does not exist, it initializes it with a
+  /// Ensures that the `characteristics` key exists in the `infusionData` map.
+  /// If the `characteristics` key does not exist, it initializes it with a
   /// `Duration` of 0 seconds.
-  void _ensureFlowRateExists() {
-    if (!infusionData.containsKey(flowRate)) {
-      infusionData[flowRate] = Duration(seconds: 0);
+  void _ensureInfusionDataEntryExists() {
+    if (!infusionData.containsKey(characteristics)) {
+      infusionData[characteristics] = Duration(seconds: 0);
     }
   }
 
@@ -107,7 +107,7 @@ class InfusionStopwatchTimer {
 
     _calculateInfusedVolumemL();
 
-    remainingVolume = volume - infusedVolume;
+    remainingVolume = characteristics.volume - infusedVolume;
 
     if (remainingVolume < 0) {
       remainingVolume = 0;
@@ -123,14 +123,14 @@ class InfusionStopwatchTimer {
   /// computes the infused volume for each entry using the `_computeInfusedVolumeInmL`
   /// method, and accumulates the result.
   ///
-  /// The `infusionData` map contains flowRate in gtts/min as the key and the infusion
+  /// The `infusionData` map contains the infusion characteristics as the key and the infusion
   /// duration in seconds at that rate as the value. The `dropFactor` is used
   /// in the computation of the infused volume which indicates how many drips are required per mL of infusion.
   void _calculateInfusedVolumemL() {
     double result = 0;
 
     for (final entry in infusionData.entries) {
-      result += _computeInfusedVolumeInmL(entry.value.inSeconds, entry.key, dropFactor);
+      result += _computeInfusedVolumeInmL(entry.value.inSeconds, entry.key.flowRate, entry.key.dropFactor);
     }
 
     infusedVolume = result;
@@ -148,7 +148,7 @@ class InfusionStopwatchTimer {
   /// Returns a [Duration] object representing the infusion duration in seconds.
   Duration _computeInfusionDurationInSeconds(double targetVolume) {
     if (targetVolume > 0) {
-      return Duration(seconds: (((targetVolume * dropFactor) / flowRate) * 60).toInt());
+      return Duration(seconds: (((targetVolume * characteristics.dropFactor) / characteristics.flowRate) * 60).toInt());
     }
 
     return Duration(seconds: 0);

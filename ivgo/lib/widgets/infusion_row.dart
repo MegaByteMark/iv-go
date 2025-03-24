@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:gap/gap.dart';
 import 'package:ivgo/utils/infusion_stopwatch_timer.dart';
 
 class InfusionRow extends StatelessWidget {
   final InfusionStopwatchTimer timer;
   final void Function(InfusionStopwatchTimer theTimer)? onRemove;
+  final void Function(InfusionStopwatchTimer theTimer)? onEdit;
 
-  const InfusionRow(this.timer, {super.key, this.onRemove});
+  const InfusionRow(this.timer, {super.key, this.onRemove, this.onEdit});
 
   @override
   Widget build(BuildContext context) {
@@ -21,7 +21,7 @@ class InfusionRow extends StatelessWidget {
       subtitle: Text.rich(
         TextSpan(
           children: [
-            TextSpan(text: 'Volume: ${timer.volume.toStringAsFixed(1)} ml'),
+            TextSpan(text: 'Volume: ${timer.characteristics.volume.toStringAsFixed(1)} ml'),
             TextSpan(text: ' '), // Add space between TextSpans
             TextSpan(
               text: 'Infused: ${timer.infusedVolume.toStringAsFixed(1)} ml, Remaining: ${remainingMinutes.toString().padLeft(2, '0')}:${remainingSeconds.toString().padLeft(2, '0')}',
@@ -37,7 +37,7 @@ class InfusionRow extends StatelessWidget {
           border: Border.all(color: Colors.black),
         ),
         child: FractionallySizedBox(
-          heightFactor: (timer.infusedVolume / timer.volume).clamp(0.0, 1.0),
+          heightFactor: (timer.infusedVolume / timer.characteristics.volume).clamp(0.0, 1.0),
           alignment: Alignment.bottomCenter,
           child: Container(
             width: 10,
@@ -48,7 +48,15 @@ class InfusionRow extends StatelessWidget {
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          if (timer.infusedVolume < timer.volume)
+          IconButton(
+            icon: Icon(Icons.edit_outlined),
+            onPressed: () {
+              if (onEdit != null) {
+                onEdit!(timer);
+              }
+            },
+          ),
+          if (timer.infusedVolume < timer.characteristics.volume)
             IconButton(
               icon: Icon(timer.isRunning ? Icons.pause : Icons.play_arrow),
               onPressed: () {
