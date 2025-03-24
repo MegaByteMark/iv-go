@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:ivgo/models/infusion_characteristics.dart';
 import 'package:ivgo/utils/infusion_stopwatch_timer.dart';
 import 'package:gap/gap.dart';
 import 'package:ivgo/widgets/infusion_row.dart';
@@ -55,10 +56,14 @@ class _StopwatchListPageState extends State<StopwatchListPage> {
                 timer,
                 onRemove: (theTimer) {
                   setState(() {
+                    theTimer.stop();
                     infusionTimers.remove(theTimer);
-
                     _manageRefreshTimer();
                   });
+                },
+                onEdit: (theTimer) async {
+                  await _addOrEditTimer(theTimer);
+                  _manageRefreshTimer();
                 },
               ),
               const Divider(),
@@ -77,6 +82,7 @@ class _StopwatchListPageState extends State<StopwatchListPage> {
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
           await _addOrEditTimer(null);
+          _manageRefreshTimer();
         },
         tooltip: 'Add New Infusion',
         child: const Icon(Icons.add),
@@ -112,9 +118,9 @@ class _StopwatchListPageState extends State<StopwatchListPage> {
 
         if (!isNewTimer) {
           titleController.text = theTimer?.title ?? '';
-          volumeController.text = theTimer?.volume.toString() ?? '';
-          dropFactorController.text = theTimer?.dropFactor.toString() ?? '';
-          flowRateController.text = theTimer?.flowRate.toString() ?? '';
+          volumeController.text = theTimer?.characteristics.volume.toString() ?? '';
+          dropFactorController.text = theTimer?.characteristics.dropFactor.toString() ?? '';
+          flowRateController.text = theTimer?.characteristics.flowRate.toString() ?? '';
         }
 
         return AlertDialog(
@@ -166,24 +172,29 @@ class _StopwatchListPageState extends State<StopwatchListPage> {
                   theTimer = InfusionStopwatchTimer(
                     infusionTimers.length + 1,
                     title,
-                    volume,
-                    dropFactor,
-                    flowRate,
+                    InfusionCharacteristics(
+                      volume: volume,
+                      dropFactor: dropFactor,
+                      flowRate: flowRate,
+                    ),
                   );
 
-                  setState(() {
-                    infusionTimers.add(theTimer!);
-                    theTimer!.start();
-                    _manageRefreshTimer();
-                  });
+                  infusionTimers.add(theTimer!);
+                  theTimer!.start();
                 } else {
                   theTimer!.title = title;
-                  theTimer!.volume = volume;
-                  theTimer!.dropFactor = dropFactor;
-                  theTimer!.flowRate = flowRate;
+                  theTimer!.changeCharacteristics(InfusionCharacteristics(
+                    volume: volume,
+                    dropFactor: dropFactor,
+                    flowRate: flowRate,
+                  ));
                 }
-
+                                
                 Navigator.of(context).pop();
+
+                setState(() {
+                  _manageRefreshTimer();
+                });
               },
             ),
           ],

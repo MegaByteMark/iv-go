@@ -50,6 +50,7 @@ class InfusionRow extends StatelessWidget {
         children: <Widget>[
           IconButton(
             icon: Icon(Icons.edit_outlined),
+            tooltip: 'Edit Infusion',
             onPressed: () {
               if (onEdit != null) {
                 onEdit!(timer);

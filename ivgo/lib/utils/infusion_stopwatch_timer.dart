@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:ivgo/models/infusion_characteristics.dart';
 
+/// A stopwatch timer for tracking the progress of an IV infusion.
 class InfusionStopwatchTimer {
   InfusionStopwatchTimer(this.id, this.title, this.characteristics) {
     _initialize();
@@ -17,7 +18,7 @@ class InfusionStopwatchTimer {
 
   /// Starts the stopwatch timer if it is not already running.
   ///
-  /// This method sets the `isRunning` flag to true and ensures that the flow rate exists in the infusion data map.
+  /// This method sets the `isRunning` flag to true and ensures that the characteristics exists in the infusion data map.
   /// It then starts a periodic timer that increments the infusion data's duration by one second
   /// every second. It also calculates the remaining seconds and stops the timer if the remaining
   /// seconds are less than or equal to zero.
@@ -30,7 +31,7 @@ class InfusionStopwatchTimer {
         infusionData[characteristics] = Duration(seconds: infusionData[characteristics]!.inSeconds + 1);
         _calculateRemainingSeconds();
 
-        if (remainingSeconds.inSeconds <= 0) {
+        if (remainingSeconds.inSeconds <= 0 && infusedVolume >= characteristics.volume) {
           stop();
         }
       });
@@ -58,21 +59,22 @@ class InfusionStopwatchTimer {
     _initialize();
   }
 
-  /// Changes the flow rate to the specified value and reinitializes the timer.
+  /// Changes the current characteristics and reinitializes the timer.
+  /// The infused data is not cleared.
   ///
-  /// This method updates the flow rate with the provided [newFlowRate] and
+  /// This method updates the characteristics with the provided [newCharacteristics] and
   /// then calls the `_initialize` method to reinitialize the timer.
-  /// This enables the end user to modify the flow rate of the infusion process
+  /// This enables the end user to modify the characteristics of the infusion process
   /// and see the updated remaining time.
   ///
   /// Parameters:
-  /// - [newFlowRate]: The new flow rate value to be set.
+  /// - [newCharacteristics]: The new characteristics value to be set.
   void changeCharacteristics(InfusionCharacteristics newCharacteristics) {
-    //TODO: Implement this method
-
+    characteristics = newCharacteristics;
+    _initialize();
   }
 
-  /// Initializes the stopwatch timer by ensuring the flow rate exists,
+  /// Initializes the stopwatch timer by ensuring the `characteristics` exist in the `infusionData` map,
   /// computing the infusion duration in seconds based on the given volume,
   /// and calculating the remaining seconds.
   void _initialize() {
