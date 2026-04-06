@@ -17,11 +17,15 @@ class StopwatchListPage extends StatefulWidget {
   State<StopwatchListPage> createState() => _StopwatchListPageState();
 }
 
-class _StopwatchListPageState extends State<StopwatchListPage> {
+class _StopwatchListPageState extends State<StopwatchListPage> with WidgetsBindingObserver {
   List<InfusionStopwatchTimer> infusionTimers = [];
   Timer? refreshTimer;
 
   Future<void> saveState() async {
+    for (final timer in infusionTimers) {
+      timer.reconcile();
+    }
+
     final prefs = await SharedPreferences.getInstance();
     final List<String> timersJson = infusionTimers.map((timer) => jsonEncode(timer.toJson())).toList();
     await prefs.setStringList('infusionTimers', timersJson);
@@ -31,29 +35,64 @@ class _StopwatchListPageState extends State<StopwatchListPage> {
     final prefs = await SharedPreferences.getInstance();
     final List<String>? timersJson = prefs.getStringList('infusionTimers');
 
-    if (timersJson != null) {
-      infusionTimers = timersJson.map((json) => InfusionStopwatchTimer.fromJson(jsonDecode(json))).toList();
-
-      for (final timer in infusionTimers) {
-        timer.onRestore();
-      }
+    if (timersJson == null) {
+      return;
     }
+
+    final restoredTimers = timersJson.map((json) => InfusionStopwatchTimer.fromJson(jsonDecode(json) as Map<String, dynamic>)).toList();
+
+    for (final timer in restoredTimers) {
+      timer.onRestore();
+    }
+
+    if (!mounted) {
+      infusionTimers = restoredTimers;
+      return;
+    }
+
+    setState(() {
+      infusionTimers = restoredTimers;
+      _manageRefreshTimer();
+    });
   }
 
   @override
   void initState() {
     super.initState();
 
+    WidgetsBinding.instance.addObserver(this);
     loadState();
     _manageRefreshTimer();
   }
 
   @override
   void dispose() {
-    saveState();
+    WidgetsBinding.instance.removeObserver(this);
+    unawaited(saveState());
 
     refreshTimer?.cancel();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    switch (state) {
+      case AppLifecycleState.resumed:
+        for (final timer in infusionTimers) {
+          timer.reconcile();
+        }
+
+        if (mounted) {
+          setState(() {
+            _manageRefreshTimer();
+          });
+        }
+      case AppLifecycleState.inactive:
+      case AppLifecycleState.hidden:
+      case AppLifecycleState.paused:
+      case AppLifecycleState.detached:
+        unawaited(saveState());
+    }
   }
 
   @override
@@ -84,12 +123,25 @@ class _StopwatchListPageState extends State<StopwatchListPage> {
             children: [
               InfusionRow(
                 timer,
+                onChanged: (_) {
+                  if (!mounted) {
+                    return;
+                  }
+
+                  setState(() {
+                    _manageRefreshTimer();
+                  });
+
+                  unawaited(saveState());
+                },
                 onRemove: (theTimer) {
                   setState(() {
                     theTimer.stop();
                     infusionTimers.remove(theTimer);
                     _manageRefreshTimer();
                   });
+
+                  unawaited(saveState());
                 },
                 onEdit: (theTimer) async {
                   await _addOrEditTimer(theTimer);
@@ -121,9 +173,15 @@ class _StopwatchListPageState extends State<StopwatchListPage> {
   }
 
   void _manageRefreshTimer() {
-    if (infusionTimers.isNotEmpty) {
+    final bool hasRunningTimers = infusionTimers.any((timer) => timer.isRunning);
+
+    if (hasRunningTimers) {
       refreshTimer ??= Timer.periodic(const Duration(seconds: 1), (timer) {
-        if (infusionTimers.isEmpty) {
+        for (final infusionTimer in infusionTimers) {
+          infusionTimer.reconcile();
+        }
+
+        if (infusionTimers.isEmpty || !infusionTimers.any((infusionTimer) => infusionTimer.isRunning)) {
           timer.cancel();
           refreshTimer = null;
         } else {
@@ -140,7 +198,7 @@ class _StopwatchListPageState extends State<StopwatchListPage> {
     await showDialog(
       context: context,
       builder: (BuildContext context) {
-        bool isNewTimer = theTimer == null;
+        final bool isNewTimer = theTimer == null;
         final TextEditingController titleController = TextEditingController();
         final TextEditingController volumeController = TextEditingController();
         final TextEditingController dropFactorController = TextEditingController();
@@ -200,7 +258,7 @@ class _StopwatchListPageState extends State<StopwatchListPage> {
 
                 if (isNewTimer) {
                   theTimer = InfusionStopwatchTimer(
-                    infusionTimers.length + 1,
+                    _nextTimerId(),
                     title,
                     InfusionCharacteristics(
                       volume: volume,
@@ -225,11 +283,20 @@ class _StopwatchListPageState extends State<StopwatchListPage> {
                 setState(() {
                   _manageRefreshTimer();
                 });
+
+                unawaited(saveState());
               },
             ),
           ],
         );
       },
     );
+  }
+
+  int _nextTimerId() {
+    return infusionTimers.fold<int>(0, (int maxId, InfusionStopwatchTimer timer) {
+          return timer.id > maxId ? timer.id : maxId;
+        }) +
+        1;
   }
 }
