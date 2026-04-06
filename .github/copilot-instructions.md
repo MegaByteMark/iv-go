@@ -10,14 +10,14 @@
 
 - Follow the Dart and Flutter lint rules in `ivgo/analysis_options.yaml`.
 - Prefer minimal, targeted changes over architectural rewrites.
-- Keep naming and file organization consistent with the existing layout: `models`, `pages`, `utils`, and `widgets`.
+- Keep naming and file organization consistent with the current layout; use the `Project Structure And Naming` section in `docs/copilot-requirements.md` for shared conventions.
 
 ## Architecture
 
 - `ivgo/lib/main.dart` wires the app shell and theme.
 - `ivgo/lib/pages/stopwatch_list_page.dart` owns the main infusion list UI and dialog flow.
-- Timer behavior is encapsulated in `ivgo/lib/utils/infusion_stopwatch_timer.dart`.
-- Persistence currently uses `shared_preferences`; changes to timer data should preserve save and restore behavior.
+- Timer behavior is encapsulated in `ivgo/lib/domain/infusion_timer.dart`.
+- Persistence currently uses `shared_preferences` via `ivgo/lib/repositories/infusion_timer_repository.dart`; changes to timer data should preserve save and restore behavior.
 
 ## Build And Test
 
@@ -34,4 +34,4 @@
 ## Requirements
 
 - Keep this file short and focused on repo-wide guidance.
-- Put longer-lived product requirements, domain rules, and acceptance criteria in `docs/copilot-requirements.md`.
+- Put longer-lived product requirements, domain rules, structure conventions, and acceptance criteria in `docs/copilot-requirements.md`.

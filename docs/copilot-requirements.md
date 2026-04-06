@@ -102,6 +102,20 @@ During an infusion the user must be able to:
 
 - Platform-specific notification implementation details for Android and iOS will be defined separately when implementation work begins.
 
+## Project Structure And Naming
+
+- Keep the project lightweight and pragmatic. Do not introduce full clean architecture layering unless the app complexity clearly justifies it.
+- Use `ivgo/lib/domain/` for stateful business types and domain value objects.
+- Use `ivgo/lib/repositories/` for persistence boundaries and storage adapters.
+- Use `ivgo/lib/pages/` for screen-level orchestration and view composition.
+- Use `ivgo/lib/widgets/` for reusable presentation widgets.
+- Reserve `ivgo/lib/utils/` for pure helper functions or stateless utility code. Do not place stateful domain objects there.
+- The primary timer aggregate is `InfusionTimer` in `ivgo/lib/domain/infusion_timer.dart`. Treat it as a domain type, not a utility.
+- `InfusionCharacteristics` lives in `ivgo/lib/domain/infusion_characteristics.dart` and should be treated as a domain value object.
+- `ivgo/lib/repositories/infusion_timer_repository.dart` owns `shared_preferences` serialization and storage for timers. UI code should not encode or decode persisted timer state directly.
+- Restore reconciliation currently belongs to app orchestration, but storage concerns should stay in repositories and notification concerns should move into dedicated services when implemented.
+- Timers restored as already completed after downtime should enter the `recoveredOverdue` state, be highlighted in the UI, and remain completed if the user acknowledges the warning.
+
 ## Acceptance Criteria
 
 - `flutter analyze` passes in `ivgo/`.

@@ -5,17 +5,20 @@ import 'package:ivgo/domain/infusion_characteristics.dart';
 import 'package:ivgo/domain/infusion_timer.dart';
 import 'package:ivgo/repositories/infusion_timer_repository.dart';
 import 'package:gap/gap.dart';
+import 'package:ivgo/services/notification_service.dart';
 import 'package:ivgo/widgets/infusion_row.dart';
 
 class StopwatchListPage extends StatefulWidget {
   StopwatchListPage({
     super.key,
     required this.title,
+    required this.notificationService,
     InfusionTimerRepository? timerRepository,
   }) : timerRepository = timerRepository ?? InfusionTimerRepository();
 
   final String title;
   final InfusionTimerRepository timerRepository;
+  final NotificationService notificationService;
 
   @override
   State<StopwatchListPage> createState() => _StopwatchListPageState();
@@ -150,6 +153,18 @@ class _StopwatchListPageState extends State<StopwatchListPage> with WidgetsBindi
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         title: Text(widget.title),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.notifications),
+            onPressed: _requestNotificationPermissions,
+            tooltip: 'Enable Notifications',
+          ),
+          IconButton(
+            icon: const Icon(Icons.notification_add_outlined),
+            tooltip: 'Send Test Notification',
+            onPressed: _sendTestNotification,
+          ),
+        ],
       ),
       body: bodyWidget,
       floatingActionButton: FloatingActionButton(
@@ -159,6 +174,36 @@ class _StopwatchListPageState extends State<StopwatchListPage> with WidgetsBindi
         },
         tooltip: 'Add New Infusion',
         child: const Icon(Icons.add),
+      ),
+    );
+  }
+
+  Future<void> _sendTestNotification() async {
+    await widget.notificationService.showTestNotification();
+
+    if (!mounted) {
+      return;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Test notification sent'),
+      ),
+    );
+  }
+
+  Future<void> _requestNotificationPermissions() async {
+    final bool granted = await widget.notificationService.requestPermissions();
+
+    if (!mounted) {
+      return;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          granted ? 'Notification permissions granted' : 'Notification permissions not granted',
+        ),
       ),
     );
   }

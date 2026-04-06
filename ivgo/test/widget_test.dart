@@ -5,14 +5,24 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ivgo/domain/infusion_characteristics.dart';
 import 'package:ivgo/domain/infusion_timer.dart';
 import 'package:ivgo/main.dart';
+import 'package:ivgo/services/notification_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'fakes/fake_notification_service.dart';
+
 void main() {
+  Future<void> pumpApp(WidgetTester tester, {NotificationService? notificationService}) async {
+    await tester.pumpWidget(
+      IVGoApp(notificationService: notificationService ?? FakeNotificationService()),
+    );
+
+    await tester.pumpAndSettle();
+  }
+
   testWidgets('shows the empty infusion state', (WidgetTester tester) async {
     SharedPreferences.setMockInitialValues(<String, Object>{});
 
-    await tester.pumpWidget(const IVGoApp());
-    await tester.pumpAndSettle();
+    await pumpApp(tester);
 
     expect(find.text('No active infusions'), findsOneWidget);
     expect(find.byTooltip('Add New Infusion'), findsOneWidget);
@@ -21,8 +31,7 @@ void main() {
   testWidgets('rejects an empty timer form', (WidgetTester tester) async {
     SharedPreferences.setMockInitialValues(<String, Object>{});
 
-    await tester.pumpWidget(const IVGoApp());
-    await tester.pumpAndSettle();
+    await pumpApp(tester);
 
     await tester.tap(find.byTooltip('Add New Infusion'));
     await tester.pumpAndSettle();
@@ -40,8 +49,7 @@ void main() {
   testWidgets('rejects invalid numeric values when adding a timer', (WidgetTester tester) async {
     SharedPreferences.setMockInitialValues(<String, Object>{});
 
-    await tester.pumpWidget(const IVGoApp());
-    await tester.pumpAndSettle();
+    await pumpApp(tester);
 
     await tester.tap(find.byTooltip('Add New Infusion'));
     await tester.pumpAndSettle();
@@ -71,7 +79,7 @@ void main() {
       'infusionTimers': <String>[jsonEncode(timer.toJson())],
     });
 
-    await tester.pumpWidget(const IVGoApp());
+    await pumpApp(tester);
     await tester.pumpAndSettle();
 
     expect(find.text('Saline'), findsOneWidget);
@@ -102,8 +110,7 @@ void main() {
       'infusionTimers': <String>[jsonEncode(recoveredTimerJson)],
     });
 
-    await tester.pumpWidget(const IVGoApp());
-    await tester.pumpAndSettle();
+    await pumpApp(tester);
 
     expect(
       find.text('Completed while the app was unavailable. Review this infusion.'),
@@ -138,8 +145,7 @@ void main() {
       'infusionTimers': <String>[jsonEncode(recoveredTimerJson)],
     });
 
-    await tester.pumpWidget(const IVGoApp());
-    await tester.pumpAndSettle();
+    await pumpApp(tester);
 
     expect(find.byTooltip('Acknowledge Recovered Timer'), findsOneWidget);
 
@@ -167,8 +173,7 @@ void main() {
       'infusionTimers': <String>[jsonEncode(timer.toJson())],
     });
 
-    await tester.pumpWidget(const IVGoApp());
-    await tester.pumpAndSettle();
+    await pumpApp(tester);
 
     await tester.tap(find.byTooltip('Edit Infusion'));
     await tester.pumpAndSettle();
@@ -188,5 +193,31 @@ void main() {
 
     expect(find.text('Saline'), findsOneWidget);
     expect(find.textContaining('Volume: 6.0 ml'), findsOneWidget);
+  });
+
+  testWidgets('requests notification permissions from the app bar action', (WidgetTester tester) async {
+    await pumpApp(
+      tester,
+      notificationService: FakeNotificationService(permissionResult: true),
+    );
+
+    expect(find.byTooltip('Enable Notifications'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Enable Notifications'));
+    await tester.pump(); // start the snackbar frame
+
+    expect(find.text('Notification permissions granted'), findsOneWidget);
+  });
+
+  testWidgets('shows a denied snackbar when notification permissions are not granted', (WidgetTester tester) async {
+    await pumpApp(
+      tester,
+      notificationService: FakeNotificationService(permissionResult: false),
+    );
+
+    await tester.tap(find.byTooltip('Enable Notifications'));
+    await tester.pump();
+
+    expect(find.text('Notification permissions not granted'), findsOneWidget);
   });
 }

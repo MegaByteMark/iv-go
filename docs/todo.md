@@ -29,6 +29,17 @@ Based on review of `copilot-requirements.md` vs current codebase implementation 
 
 ## Critical: Notifications
 
+### Notification Setup Progress
+- [x] Add `flutter_local_notifications` dependency using the latest SDK-compatible major version
+- [x] Introduce `NotificationService` in `ivgo/lib/services/notification_service.dart`
+- [x] Initialize the notification plugin during app startup
+- [x] Add an explicit permission request flow instead of prompting at app startup
+- [x] Add a temporary app-bar action to request notification permissions and confirm the result with a snackbar
+- [x] Add a temporary app-bar action to fire an immediate local test notification and verify end-to-end delivery
+- [ ] Add explicit scheduled-notification support using timezone-aware scheduling
+- [ ] Add a temporary scheduled test notification to prove delayed delivery before wiring milestone logic
+- [ ] Remove temporary notification test UI once milestone notifications are implemented
+
 ### Required Notifications
 - [ ] Implement last 10 minutes milestone notification
 - [ ] Implement last 1 minute milestone notification
@@ -42,11 +53,12 @@ Based on review of `copilot-requirements.md` vs current codebase implementation 
 - [ ] Define and implement notification behavior for timers recovered as already ended after app relaunch
 
 ### Notification Permissions And Platform Work
-- [ ] Request notification permissions at the appropriate point in the app flow
+- [x] Request notification permissions at the appropriate point in the app flow
 - [ ] Handle denied or unavailable permissions clearly without blocking core timer use
 - [ ] Show a persistent warning in the main timer list view while notification permissions remain denied
-- [ ] Implement Android notification behavior
-- [ ] Implement iOS notification behavior
+- [x] Implement baseline Android local notification plumbing and manual verification
+- [x] Implement baseline iOS local notification plumbing and manual verification
+- [ ] Add scheduling-specific Android and iOS setup required for timed notifications
 
 ---
 
@@ -100,6 +112,7 @@ Based on review of `copilot-requirements.md` vs current codebase implementation 
 - [x] Add unit tests for timer lifecycle transitions: start, pause, resume, reset, end, and restore
 - [x] Add tests for persistence round-tripping and restore reconciliation
 - [ ] Add widget tests for add, edit, remove, validation errors, and empty-state behavior
+- [ ] Add widget tests for notification permission and test-notification actions
 - [ ] Add tests covering notification milestone state once notifications are implemented
 
 ### Acceptance Checks
@@ -129,7 +142,7 @@ Based on review of `copilot-requirements.md` vs current codebase implementation 
 
 ### Service Boundaries
 - [x] Extract persistence logic out of the page widget into a small repository or storage service around `shared_preferences`
-- [ ] Introduce a notification service rather than coupling notification behavior directly into UI code
+- [x] Introduce a notification service rather than coupling notification behavior directly into UI code
 - [ ] Introduce a small lifecycle coordinator or equivalent to own restore, reconciliation, and notification rescheduling behavior
 
 ### Domain Model Cleanup
@@ -145,7 +158,7 @@ Based on review of `copilot-requirements.md` vs current codebase implementation 
 |----------|--------|----------|
 | Timer lifecycle and restore | Core lifecycle, recovered-overdue highlighting, and acknowledgement flow implemented | Critical |
 | Persistence reliability | Core persistence and restore flow implemented; notification-related recovery still pending | Critical |
-| Notifications | Not implemented | Critical |
+| Notifications | Baseline permission and immediate local notification plumbing implemented; scheduling and milestone logic still pending | Critical |
 | Disclaimer and safety warnings | Not implemented | Critical |
 | Validation | Basic create/edit validation implemented; mobile UX polish still pending | High |
 | Testing | Core timer and validation coverage added; broader UI coverage still pending | High |
