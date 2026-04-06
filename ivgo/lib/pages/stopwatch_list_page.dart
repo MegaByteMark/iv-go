@@ -199,10 +199,12 @@ class _StopwatchListPageState extends State<StopwatchListPage> with WidgetsBindi
       context: context,
       builder: (BuildContext context) {
         final bool isNewTimer = theTimer == null;
+        final GlobalKey<FormState> formKey = GlobalKey<FormState>();
         final TextEditingController titleController = TextEditingController();
         final TextEditingController volumeController = TextEditingController();
         final TextEditingController dropFactorController = TextEditingController();
         final TextEditingController flowRateController = TextEditingController();
+        AutovalidateMode autovalidateMode = AutovalidateMode.disabled;
 
         if (!isNewTimer) {
           titleController.text = theTimer?.title ?? '';
@@ -211,86 +213,141 @@ class _StopwatchListPageState extends State<StopwatchListPage> with WidgetsBindi
           flowRateController.text = theTimer?.characteristics.flowRate.toString() ?? '';
         }
 
-        return AlertDialog(
-          title: (isNewTimer) ? Text('New Infusion') : Text('Edit Infusion :: ${theTimer!.title}'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              TextField(
-                controller: titleController,
-                decoration: const InputDecoration(labelText: 'Title'),
-                autofocus: true,
-              ),
-              Gap(8),
-              TextField(
-                controller: volumeController,
-                decoration: const InputDecoration(labelText: 'Volume (ml)'),
-                keyboardType: TextInputType.number,
-              ),
-              Gap(8),
-              TextField(
-                controller: dropFactorController,
-                decoration: const InputDecoration(labelText: 'Drop Factor (gtts/ml)'),
-                keyboardType: TextInputType.number,
-              ),
-              Gap(8),
-              TextField(
-                controller: flowRateController,
-                decoration: const InputDecoration(labelText: 'Flow Rate (gtts/min)'),
-                keyboardType: TextInputType.number,
-              ),
-            ],
-          ),
-          actions: <Widget>[
-            TextButton(
-              child: const Text('Cancel'),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-            ),
-            TextButton(
-              child: (isNewTimer) ? Text('Add') : Text('Save'),
-              onPressed: () {
-                final String title = titleController.text;
-                final double volume = double.tryParse(volumeController.text) ?? 0.0;
-                final double dropFactor = double.tryParse(dropFactorController.text) ?? 0.0;
-                final double flowRate = double.tryParse(flowRateController.text) ?? 0.0;
-
-                if (isNewTimer) {
-                  theTimer = InfusionStopwatchTimer(
-                    _nextTimerId(),
-                    title,
-                    InfusionCharacteristics(
-                      volume: volume,
-                      dropFactor: dropFactor,
-                      flowRate: flowRate,
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setDialogState) {
+            return AlertDialog(
+              scrollable: true,
+              title: (isNewTimer) ? Text('New Infusion') : Text('Edit Infusion :: ${theTimer!.title}'),
+              content: Form(
+                key: formKey,
+                autovalidateMode: autovalidateMode,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    TextFormField(
+                      controller: titleController,
+                      decoration: const InputDecoration(labelText: 'Title'),
+                      autofocus: true,
+                      textInputAction: TextInputAction.next,
+                      validator: _validateTitle,
                     ),
-                  );
+                    const Gap(8),
+                    TextFormField(
+                      controller: volumeController,
+                      decoration: const InputDecoration(labelText: 'Volume (ml)'),
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      textInputAction: TextInputAction.next,
+                      validator: (value) => _validatePositiveNumber(value, 'volume'),
+                    ),
+                    const Gap(8),
+                    TextFormField(
+                      controller: dropFactorController,
+                      decoration: const InputDecoration(labelText: 'Drop Factor (gtts/ml)'),
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      textInputAction: TextInputAction.next,
+                      validator: (value) => _validatePositiveNumber(value, 'drop factor'),
+                    ),
+                    const Gap(8),
+                    TextFormField(
+                      controller: flowRateController,
+                      decoration: const InputDecoration(labelText: 'Flow Rate (gtts/min)'),
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      textInputAction: TextInputAction.done,
+                      validator: (value) => _validatePositiveNumber(value, 'flow rate'),
+                    ),
+                  ],
+                ),
+              ),
+              actions: <Widget>[
+                TextButton(
+                  child: const Text('Cancel'),
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                ),
+                TextButton(
+                  child: (isNewTimer) ? Text('Add') : Text('Save'),
+                  onPressed: () {
+                    FocusScope.of(context).unfocus();
 
-                  infusionTimers.add(theTimer!);
-                  theTimer!.start();
-                } else {
-                  theTimer!.title = title;
-                  theTimer!.changeCharacteristics(InfusionCharacteristics(
-                    volume: volume,
-                    dropFactor: dropFactor,
-                    flowRate: flowRate,
-                  ));
-                }
+                    setDialogState(() {
+                      autovalidateMode = AutovalidateMode.onUserInteraction;
+                    });
 
-                Navigator.of(context).pop();
+                    if (!formKey.currentState!.validate()) {
+                      return;
+                    }
 
-                setState(() {
-                  _manageRefreshTimer();
-                });
+                    final String title = titleController.text.trim();
+                    final double volume = double.parse(volumeController.text.trim());
+                    final double dropFactor = double.parse(dropFactorController.text.trim());
+                    final double flowRate = double.parse(flowRateController.text.trim());
 
-                unawaited(saveState());
-              },
-            ),
-          ],
+                    if (isNewTimer) {
+                      theTimer = InfusionStopwatchTimer(
+                        _nextTimerId(),
+                        title,
+                        InfusionCharacteristics(
+                          volume: volume,
+                          dropFactor: dropFactor,
+                          flowRate: flowRate,
+                        ),
+                      );
+
+                      infusionTimers.add(theTimer!);
+                      theTimer!.start();
+                    } else {
+                      theTimer!.title = title;
+                      theTimer!.changeCharacteristics(InfusionCharacteristics(
+                        volume: volume,
+                        dropFactor: dropFactor,
+                        flowRate: flowRate,
+                      ));
+                    }
+
+                    Navigator.of(context).pop();
+
+                    setState(() {
+                      _manageRefreshTimer();
+                    });
+
+                    unawaited(saveState());
+                  },
+                ),
+              ],
+            );
+          },
         );
       },
     );
+  }
+
+  String? _validateTitle(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return 'Enter a title';
+    }
+
+    return null;
+  }
+
+  String? _validatePositiveNumber(String? value, String fieldName) {
+    final String trimmedValue = value?.trim() ?? '';
+
+    if (trimmedValue.isEmpty) {
+      return 'Enter $fieldName';
+    }
+
+    final double? parsedValue = double.tryParse(trimmedValue);
+
+    if (parsedValue == null) {
+      return '$fieldName must be a number';
+    }
+
+    if (parsedValue <= 0) {
+      return '$fieldName must be greater than 0';
+    }
+
+    return null;
   }
 
   int _nextTimerId() {
