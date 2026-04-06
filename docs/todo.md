@@ -128,7 +128,7 @@ Based on review of `copilot-requirements.md` vs current codebase implementation 
 ## Medium Priority: Targeted Technical Debt
 
 ### Service Boundaries
-- [ ] Extract persistence logic out of the page widget into a small repository or storage service around `shared_preferences`
+- [x] Extract persistence logic out of the page widget into a small repository or storage service around `shared_preferences`
 - [ ] Introduce a notification service rather than coupling notification behavior directly into UI code
 - [ ] Introduce a small lifecycle coordinator or equivalent to own restore, reconciliation, and notification rescheduling behavior
 

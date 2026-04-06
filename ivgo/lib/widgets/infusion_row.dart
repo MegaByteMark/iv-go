@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:ivgo/utils/infusion_stopwatch_timer.dart';
+import 'package:ivgo/domain/infusion_timer.dart';
 
 class InfusionRow extends StatelessWidget {
-  final InfusionStopwatchTimer timer;
-  final void Function(InfusionStopwatchTimer theTimer)? onRemove;
-  final void Function(InfusionStopwatchTimer theTimer)? onEdit;
-  final void Function(InfusionStopwatchTimer theTimer)? onChanged;
+  final InfusionTimer timer;
+  final void Function(InfusionTimer theTimer)? onRemove;
+  final void Function(InfusionTimer theTimer)? onEdit;
+  final void Function(InfusionTimer theTimer)? onChanged;
 
   const InfusionRow(this.timer, {super.key, this.onRemove, this.onEdit, this.onChanged});
 

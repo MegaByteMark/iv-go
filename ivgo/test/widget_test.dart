@@ -2,9 +2,9 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ivgo/domain/infusion_characteristics.dart';
+import 'package:ivgo/domain/infusion_timer.dart';
 import 'package:ivgo/main.dart';
-import 'package:ivgo/models/infusion_characteristics.dart';
-import 'package:ivgo/utils/infusion_stopwatch_timer.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -61,7 +61,7 @@ void main() {
   });
 
   testWidgets('restores persisted timers into the list', (WidgetTester tester) async {
-    final timer = InfusionStopwatchTimer(
+    final timer = InfusionTimer(
       1,
       'Saline',
       InfusionCharacteristics(volume: 6, dropFactor: 20, flowRate: 60),
@@ -157,7 +157,7 @@ void main() {
   });
 
   testWidgets('invalid edits do not overwrite an existing timer', (WidgetTester tester) async {
-    final timer = InfusionStopwatchTimer(
+    final timer = InfusionTimer(
       1,
       'Saline',
       InfusionCharacteristics(volume: 6, dropFactor: 20, flowRate: 60),

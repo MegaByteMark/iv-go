@@ -1,9 +1,9 @@
-import 'package:ivgo/models/infusion_characteristics.dart';
+import 'package:ivgo/domain/infusion_characteristics.dart';
 
 enum InfusionTimerStatus { paused, running, ended, recoveredOverdue }
 
-/// A stopwatch timer for tracking the progress of an IV infusion.
-class InfusionStopwatchTimer {
+/// Tracks the progress and restore state of a single infusion.
+class InfusionTimer {
   final InfusionCharacteristics _initialCharacteristics;
   final DateTime Function() _nowProvider;
   final List<_InfusionPhase> _phases;
@@ -26,7 +26,7 @@ class InfusionStopwatchTimer {
   InfusionTimerStatus get status => _status;
   DateTime? get completedAt => _completedAt;
 
-  InfusionStopwatchTimer(
+  InfusionTimer(
     this.id,
     this.title,
     InfusionCharacteristics characteristics, {
@@ -39,7 +39,7 @@ class InfusionStopwatchTimer {
     _refreshComputedFields();
   }
 
-  InfusionStopwatchTimer.fromJson(
+  InfusionTimer.fromJson(
     Map<String, dynamic> json, {
     DateTime Function()? nowProvider,
   })  : id = json['id'] as int,

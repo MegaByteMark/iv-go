@@ -21,7 +21,7 @@ class IVGoApp extends StatelessWidget {
           primaryColor: Colors.lightBlue,
         ),
       ),
-      home: const StopwatchListPage(title: 'Active Infusions'),
+      home: StopwatchListPage(title: 'Active Infusions'),
     );
   }
 }

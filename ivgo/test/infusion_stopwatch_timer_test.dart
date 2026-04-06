@@ -1,19 +1,19 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ivgo/models/infusion_characteristics.dart';
-import 'package:ivgo/utils/infusion_stopwatch_timer.dart';
+import 'package:ivgo/domain/infusion_characteristics.dart';
+import 'package:ivgo/domain/infusion_timer.dart';
 
 void main() {
-  group('InfusionStopwatchTimer', () {
+  group('InfusionTimer', () {
     late DateTime now;
 
-    InfusionStopwatchTimer createTimer({
+    InfusionTimer createTimer({
       required double volume,
       double dropFactor = 20,
       double flowRate = 60,
     }) {
-      return InfusionStopwatchTimer(
+      return InfusionTimer(
         1,
         'Infusion',
         InfusionCharacteristics(
@@ -106,7 +106,7 @@ void main() {
       final encoded = jsonEncode(timer.toJson());
 
       now = now.add(const Duration(seconds: 60));
-      final restored = InfusionStopwatchTimer.fromJson(
+      final restored = InfusionTimer.fromJson(
         jsonDecode(encoded) as Map<String, dynamic>,
         nowProvider: () => now,
       );
@@ -126,7 +126,7 @@ void main() {
       final encoded = jsonEncode(timer.toJson());
 
       now = now.add(const Duration(seconds: 90));
-      final restored = InfusionStopwatchTimer.fromJson(
+      final restored = InfusionTimer.fromJson(
         jsonDecode(encoded) as Map<String, dynamic>,
         nowProvider: () => now,
       );
@@ -146,7 +146,7 @@ void main() {
       final encoded = jsonEncode(timer.toJson());
 
       now = now.add(const Duration(minutes: 5));
-      final restored = InfusionStopwatchTimer.fromJson(
+      final restored = InfusionTimer.fromJson(
         jsonDecode(encoded) as Map<String, dynamic>,
         nowProvider: () => now,
       );
@@ -167,7 +167,7 @@ void main() {
       final encoded = jsonEncode(timer.toJson());
 
       now = now.add(const Duration(minutes: 5));
-      final restored = InfusionStopwatchTimer.fromJson(
+      final restored = InfusionTimer.fromJson(
         jsonDecode(encoded) as Map<String, dynamic>,
         nowProvider: () => now,
       );

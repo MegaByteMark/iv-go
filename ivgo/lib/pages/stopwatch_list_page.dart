@@ -1,45 +1,36 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:flutter/material.dart';
-import 'package:ivgo/models/infusion_characteristics.dart';
-import 'package:ivgo/utils/infusion_stopwatch_timer.dart';
+import 'package:ivgo/domain/infusion_characteristics.dart';
+import 'package:ivgo/domain/infusion_timer.dart';
+import 'package:ivgo/repositories/infusion_timer_repository.dart';
 import 'package:gap/gap.dart';
 import 'package:ivgo/widgets/infusion_row.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class StopwatchListPage extends StatefulWidget {
-  const StopwatchListPage({super.key, required this.title});
+  StopwatchListPage({
+    super.key,
+    required this.title,
+    InfusionTimerRepository? timerRepository,
+  }) : timerRepository = timerRepository ?? InfusionTimerRepository();
 
   final String title;
+  final InfusionTimerRepository timerRepository;
 
   @override
   State<StopwatchListPage> createState() => _StopwatchListPageState();
 }
 
 class _StopwatchListPageState extends State<StopwatchListPage> with WidgetsBindingObserver {
-  List<InfusionStopwatchTimer> infusionTimers = [];
+  List<InfusionTimer> infusionTimers = [];
   Timer? refreshTimer;
 
   Future<void> saveState() async {
-    for (final timer in infusionTimers) {
-      timer.reconcile();
-    }
-
-    final prefs = await SharedPreferences.getInstance();
-    final List<String> timersJson = infusionTimers.map((timer) => jsonEncode(timer.toJson())).toList();
-    await prefs.setStringList('infusionTimers', timersJson);
+    await widget.timerRepository.saveTimers(infusionTimers);
   }
 
   Future<void> loadState() async {
-    final prefs = await SharedPreferences.getInstance();
-    final List<String>? timersJson = prefs.getStringList('infusionTimers');
-
-    if (timersJson == null) {
-      return;
-    }
-
-    final restoredTimers = timersJson.map((json) => InfusionStopwatchTimer.fromJson(jsonDecode(json) as Map<String, dynamic>)).toList();
+    final List<InfusionTimer> restoredTimers = await widget.timerRepository.loadTimers();
 
     for (final timer in restoredTimers) {
       timer.onRestore();
@@ -194,7 +185,7 @@ class _StopwatchListPageState extends State<StopwatchListPage> with WidgetsBindi
     }
   }
 
-  Future<void> _addOrEditTimer(InfusionStopwatchTimer? theTimer) async {
+  Future<void> _addOrEditTimer(InfusionTimer? theTimer) async {
     await showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -284,7 +275,7 @@ class _StopwatchListPageState extends State<StopwatchListPage> with WidgetsBindi
                     final double flowRate = double.parse(flowRateController.text.trim());
 
                     if (isNewTimer) {
-                      theTimer = InfusionStopwatchTimer(
+                      theTimer = InfusionTimer(
                         _nextTimerId(),
                         title,
                         InfusionCharacteristics(
@@ -351,7 +342,7 @@ class _StopwatchListPageState extends State<StopwatchListPage> with WidgetsBindi
   }
 
   int _nextTimerId() {
-    return infusionTimers.fold<int>(0, (int maxId, InfusionStopwatchTimer timer) {
+    return infusionTimers.fold<int>(0, (int maxId, InfusionTimer timer) {
           return timer.id > maxId ? timer.id : maxId;
         }) +
         1;

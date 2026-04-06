@@ -1,6 +1,11 @@
 class InfusionCharacteristics {
   late double volume, dropFactor, flowRate;
-  InfusionCharacteristics({this.volume = 0.0, this.dropFactor = 0.0, this.flowRate = 0.0});
+
+  InfusionCharacteristics({
+    this.volume = 0.0,
+    this.dropFactor = 0.0,
+    this.flowRate = 0.0,
+  });
 
   // Make sure the equality operations on this class use the values of the fields
   // not the references to the objects themselves.
