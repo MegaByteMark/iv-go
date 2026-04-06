@@ -129,6 +129,14 @@ class InfusionStopwatchTimer {
     _refreshComputedFields();
   }
 
+  void acknowledgeRecoveredOverdue() {
+    if (!isRecoveredOverdue) {
+      return;
+    }
+
+    _status = InfusionTimerStatus.ended;
+  }
+
   void changeCharacteristics(InfusionCharacteristics newCharacteristics) {
     final DateTime now = _nowProvider();
     final bool wasRunning = isRunning;

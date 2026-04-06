@@ -23,7 +23,7 @@ Based on review of `copilot-requirements.md` vs current codebase implementation 
 - [x] Rework restore logic so elapsed real time is only applied to periods when the timer was actually running
 - [x] If a timer should have finished while the app was closed or the device was unavailable, restore it as ended rather than continuing it
 - [x] Clearly highlight timers that completed while the device was unavailable so the user can review them on next launch
-- [ ] Decide and implement how overdue recovered timers are acknowledged or cleared from the highlighted state
+- [x] Decide and implement how overdue recovered timers are acknowledged or cleared from the highlighted state
 
 ---
 
@@ -143,7 +143,7 @@ Based on review of `copilot-requirements.md` vs current codebase implementation 
 
 | Category | Status | Priority |
 |----------|--------|----------|
-| Timer lifecycle and restore | Core lifecycle and recovered-overdue highlighting implemented; acknowledgement flow still pending | Critical |
+| Timer lifecycle and restore | Core lifecycle, recovered-overdue highlighting, and acknowledgement flow implemented | Critical |
 | Persistence reliability | Core persistence and restore flow implemented; notification-related recovery still pending | Critical |
 | Notifications | Not implemented | Critical |
 | Disclaimer and safety warnings | Not implemented | Critical |

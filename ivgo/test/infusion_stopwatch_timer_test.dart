@@ -159,6 +159,28 @@ void main() {
       expect(restored.infusedVolume, closeTo(6, 0.0001));
     });
 
+    test('acknowledging a recovered overdue timer clears only the warning state', () {
+      final timer = createTimer(volume: 6);
+
+      timer.start();
+      now = now.add(const Duration(seconds: 30));
+      final encoded = jsonEncode(timer.toJson());
+
+      now = now.add(const Duration(minutes: 5));
+      final restored = InfusionStopwatchTimer.fromJson(
+        jsonDecode(encoded) as Map<String, dynamic>,
+        nowProvider: () => now,
+      );
+      restored.onRestore();
+      restored.acknowledgeRecoveredOverdue();
+
+      expect(restored.isRecoveredOverdue, isFalse);
+      expect(restored.status, InfusionTimerStatus.ended);
+      expect(restored.isEnded, isTrue);
+      expect(restored.remainingSeconds, Duration.zero);
+      expect(restored.infusedVolume, closeTo(6, 0.0001));
+    });
+
     test('serializes to valid JSON', () {
       final timer = createTimer(volume: 6);
 

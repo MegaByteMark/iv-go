@@ -114,6 +114,48 @@ void main() {
     expect(recoveredTile.tileColor, isNotNull);
   });
 
+  testWidgets('acknowledging a recovered timer clears the warning state', (WidgetTester tester) async {
+    final Map<String, dynamic> recoveredTimerJson = <String, dynamic>{
+      'id': 1,
+      'title': 'Saline',
+      'characteristics': <String, dynamic>{
+        'volume': 6.0,
+        'dropFactor': 20.0,
+        'flowRate': 60.0,
+      },
+      'initialCharacteristics': <String, dynamic>{
+        'volume': 6.0,
+        'dropFactor': 20.0,
+        'flowRate': 60.0,
+      },
+      'status': 'running',
+      'lastStartedAt': DateTime.now().subtract(const Duration(minutes: 5)).toIso8601String(),
+      'completedAt': null,
+      'phases': <Map<String, dynamic>>[],
+    };
+
+    SharedPreferences.setMockInitialValues(<String, Object>{
+      'infusionTimers': <String>[jsonEncode(recoveredTimerJson)],
+    });
+
+    await tester.pumpWidget(const IVGoApp());
+    await tester.pumpAndSettle();
+
+    expect(find.byTooltip('Acknowledge Recovered Timer'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Acknowledge Recovered Timer'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('Completed while the app was unavailable. Review this infusion.'),
+      findsNothing,
+    );
+    expect(find.byTooltip('Acknowledge Recovered Timer'), findsNothing);
+
+    final ListTile acknowledgedTile = tester.widget<ListTile>(find.byType(ListTile));
+    expect(acknowledgedTile.tileColor, isNull);
+  });
+
   testWidgets('invalid edits do not overwrite an existing timer', (WidgetTester tester) async {
     final timer = InfusionStopwatchTimer(
       1,

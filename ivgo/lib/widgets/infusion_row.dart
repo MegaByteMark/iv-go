@@ -90,6 +90,21 @@ class InfusionRow extends StatelessWidget {
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
+          if (isRecoveredOverdue)
+            IconButton(
+              icon: Icon(
+                Icons.check_circle_outline,
+                color: theme.colorScheme.error,
+              ),
+              tooltip: 'Acknowledge Recovered Timer',
+              onPressed: () {
+                timer.acknowledgeRecoveredOverdue();
+
+                if (onChanged != null) {
+                  onChanged!(timer);
+                }
+              },
+            ),
           IconButton(
             icon: Icon(Icons.edit_outlined),
             tooltip: 'Edit Infusion',
