@@ -110,6 +110,7 @@ void main() {
         jsonDecode(encoded) as Map<String, dynamic>,
         nowProvider: () => now,
       );
+      restored.onRestore();
 
       expect(restored.isRunning, isTrue);
       expect(restored.infusedVolume, closeTo(4.5, 0.0001));
@@ -129,11 +130,33 @@ void main() {
         jsonDecode(encoded) as Map<String, dynamic>,
         nowProvider: () => now,
       );
+      restored.onRestore();
 
       expect(restored.isPaused, isTrue);
       expect(restored.isRunning, isFalse);
       expect(restored.infusedVolume, closeTo(1.5, 0.0001));
       expect(restored.remainingSeconds.inSeconds, 90);
+    });
+
+    test('timers that complete during restore are marked recovered overdue', () {
+      final timer = createTimer(volume: 6);
+
+      timer.start();
+      now = now.add(const Duration(seconds: 30));
+      final encoded = jsonEncode(timer.toJson());
+
+      now = now.add(const Duration(minutes: 5));
+      final restored = InfusionStopwatchTimer.fromJson(
+        jsonDecode(encoded) as Map<String, dynamic>,
+        nowProvider: () => now,
+      );
+      restored.onRestore();
+
+      expect(restored.isRecoveredOverdue, isTrue);
+      expect(restored.isEnded, isTrue);
+      expect(restored.isRunning, isFalse);
+      expect(restored.remainingSeconds, Duration.zero);
+      expect(restored.infusedVolume, closeTo(6, 0.0001));
     });
 
     test('serializes to valid JSON', () {

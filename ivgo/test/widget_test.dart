@@ -78,6 +78,42 @@ void main() {
     expect(find.byType(ListTile), findsOneWidget);
   });
 
+  testWidgets('highlights timers recovered as overdue after downtime', (WidgetTester tester) async {
+    final Map<String, dynamic> recoveredTimerJson = <String, dynamic>{
+      'id': 1,
+      'title': 'Saline',
+      'characteristics': <String, dynamic>{
+        'volume': 6.0,
+        'dropFactor': 20.0,
+        'flowRate': 60.0,
+      },
+      'initialCharacteristics': <String, dynamic>{
+        'volume': 6.0,
+        'dropFactor': 20.0,
+        'flowRate': 60.0,
+      },
+      'status': 'running',
+      'lastStartedAt': DateTime.now().subtract(const Duration(minutes: 5)).toIso8601String(),
+      'completedAt': null,
+      'phases': <Map<String, dynamic>>[],
+    };
+
+    SharedPreferences.setMockInitialValues(<String, Object>{
+      'infusionTimers': <String>[jsonEncode(recoveredTimerJson)],
+    });
+
+    await tester.pumpWidget(const IVGoApp());
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('Completed while the app was unavailable. Review this infusion.'),
+      findsOneWidget,
+    );
+
+    final ListTile recoveredTile = tester.widget<ListTile>(find.byType(ListTile));
+    expect(recoveredTile.tileColor, isNotNull);
+  });
+
   testWidgets('invalid edits do not overwrite an existing timer', (WidgetTester tester) async {
     final timer = InfusionStopwatchTimer(
       1,

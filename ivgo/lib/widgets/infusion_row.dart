@@ -11,25 +11,66 @@ class InfusionRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final bool isRecoveredOverdue = timer.isRecoveredOverdue;
     final int remainingMinutes = timer.remainingSeconds.inSeconds ~/ 60;
     final int remainingSeconds = timer.remainingSeconds.inSeconds % 60;
+    final Color progressColor;
+
+    if (isRecoveredOverdue) {
+      progressColor = theme.colorScheme.error;
+    } else if (timer.isEnded) {
+      progressColor = theme.colorScheme.outline;
+    } else if (timer.isRunning) {
+      progressColor = Colors.green;
+    } else {
+      progressColor = theme.colorScheme.tertiary;
+    }
 
     return ListTile(
+      isThreeLine: isRecoveredOverdue,
+      tileColor: isRecoveredOverdue ? theme.colorScheme.errorContainer : null,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: isRecoveredOverdue ? BorderSide(color: theme.colorScheme.error, width: 1.5) : BorderSide.none,
+      ),
       title: Text(
         timer.title,
-        style: TextStyle(fontWeight: FontWeight.bold),
+        style: TextStyle(
+          fontWeight: FontWeight.bold,
+          color: isRecoveredOverdue ? theme.colorScheme.onErrorContainer : null,
+        ),
       ),
-      subtitle: Text.rich(
-        TextSpan(
-          children: [
-            TextSpan(text: 'Volume: ${timer.characteristics.volume.toStringAsFixed(1)} ml'),
-            TextSpan(text: ' '), // Add space between TextSpans
+      subtitle: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text.rich(
             TextSpan(
-              text: 'Infused: ${timer.infusedVolume.toStringAsFixed(1)} ml, Remaining: ${remainingMinutes.toString().padLeft(2, '0')}:${remainingSeconds.toString().padLeft(2, '0')}',
-              style: TextStyle(fontWeight: FontWeight.bold),
+              style: TextStyle(
+                color: isRecoveredOverdue ? theme.colorScheme.onErrorContainer : null,
+              ),
+              children: [
+                TextSpan(text: 'Volume: ${timer.characteristics.volume.toStringAsFixed(1)} ml'),
+                const TextSpan(text: ' '),
+                TextSpan(
+                  text: 'Infused: ${timer.infusedVolume.toStringAsFixed(1)} ml, Remaining: ${remainingMinutes.toString().padLeft(2, '0')}:${remainingSeconds.toString().padLeft(2, '0')}',
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+          ),
+          if (isRecoveredOverdue) ...[
+            const SizedBox(height: 4),
+            Text(
+              'Completed while the app was unavailable. Review this infusion.',
+              style: TextStyle(
+                color: theme.colorScheme.onErrorContainer,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ],
-        ),
+        ],
       ),
       leading: Container(
         width: 10,
@@ -42,7 +83,7 @@ class InfusionRow extends StatelessWidget {
           alignment: Alignment.bottomCenter,
           child: Container(
             width: 10,
-            color: Colors.green,
+            color: progressColor,
           ),
         ),
       ),

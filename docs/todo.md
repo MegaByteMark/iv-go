@@ -10,7 +10,7 @@ Based on review of `copilot-requirements.md` vs current codebase implementation 
 - [x] Replace the current simple running/stopped model with explicit timer states such as running, paused, and ended
 - [x] Separate pause/resume semantics from completion semantics so a finished infusion is not treated the same as a manually paused infusion
 - [x] Fix the timer lifecycle so pausing, resuming, resetting, and completion all work reliably after a timer has been cancelled once
-- [ ] Add explicit recovered-overdue state and UI behavior for timers discovered as completed after app/device downtime
+- [x] Add explicit recovered-overdue state and UI behavior for timers discovered as completed after app/device downtime
 
 ### Persistence Reliability
 - [x] Redesign persisted infusion history into a JSON-safe structure
@@ -22,7 +22,7 @@ Based on review of `copilot-requirements.md` vs current codebase implementation 
 - [x] Rework restore logic so paused timers do not auto-resume when the app is reopened
 - [x] Rework restore logic so elapsed real time is only applied to periods when the timer was actually running
 - [x] If a timer should have finished while the app was closed or the device was unavailable, restore it as ended rather than continuing it
-- [ ] Clearly highlight timers that completed while the device was unavailable so the user can review them on next launch
+- [x] Clearly highlight timers that completed while the device was unavailable so the user can review them on next launch
 - [ ] Decide and implement how overdue recovered timers are acknowledged or cleared from the highlighted state
 
 ---
@@ -113,7 +113,7 @@ Based on review of `copilot-requirements.md` vs current codebase implementation 
 ### Main List UX
 - [ ] Expand the empty state to guide the user to create their first infusion timer
 - [ ] Improve at-a-glance status presentation for running, paused, ended, and recovered-overdue timers
-- [ ] Add explicit visual treatment for timers that completed while the app was not actively notifying the user
+- [x] Add explicit visual treatment for timers that completed while the app was not actively notifying the user
 
 ### Accessibility
 - [ ] Verify text contrast and progress-indicator contrast
@@ -143,7 +143,7 @@ Based on review of `copilot-requirements.md` vs current codebase implementation 
 
 | Category | Status | Priority |
 |----------|--------|----------|
-| Timer lifecycle and restore | Core lifecycle fixed; recovered-overdue UX still pending | Critical |
+| Timer lifecycle and restore | Core lifecycle and recovered-overdue highlighting implemented; acknowledgement flow still pending | Critical |
 | Persistence reliability | Core persistence and restore flow implemented; notification-related recovery still pending | Critical |
 | Notifications | Not implemented | Critical |
 | Disclaimer and safety warnings | Not implemented | Critical |

@@ -1,6 +1,6 @@
 import 'package:ivgo/models/infusion_characteristics.dart';
 
-enum InfusionTimerStatus { paused, running, ended }
+enum InfusionTimerStatus { paused, running, ended, recoveredOverdue }
 
 /// A stopwatch timer for tracking the progress of an IV infusion.
 class InfusionStopwatchTimer {
@@ -21,7 +21,8 @@ class InfusionStopwatchTimer {
 
   bool get isRunning => _status == InfusionTimerStatus.running;
   bool get isPaused => _status == InfusionTimerStatus.paused;
-  bool get isEnded => _status == InfusionTimerStatus.ended;
+  bool get isEnded => _status == InfusionTimerStatus.ended || _status == InfusionTimerStatus.recoveredOverdue;
+  bool get isRecoveredOverdue => _status == InfusionTimerStatus.recoveredOverdue;
   InfusionTimerStatus get status => _status;
   DateTime? get completedAt => _completedAt;
 
@@ -61,11 +62,10 @@ class InfusionStopwatchTimer {
         _completedAt = _parseDateTime(json['completedAt']),
         _phases = _parsePhases(json) {
     _refreshComputedFields();
-    reconcile();
   }
 
   void onRestore() {
-    reconcile();
+    reconcile(markRecoveredOverdue: true);
   }
 
   Map<String, dynamic> toJson() {
@@ -83,8 +83,11 @@ class InfusionStopwatchTimer {
     };
   }
 
-  void reconcile({DateTime? now}) {
-    _captureElapsed(now: now ?? _nowProvider());
+  void reconcile({DateTime? now, bool markRecoveredOverdue = false}) {
+    _captureElapsed(
+      now: now ?? _nowProvider(),
+      markRecoveredOverdue: markRecoveredOverdue,
+    );
     _refreshComputedFields();
   }
 
@@ -109,7 +112,7 @@ class InfusionStopwatchTimer {
       return;
     }
 
-    _captureElapsed(now: _nowProvider());
+    _captureElapsed(now: _nowProvider(), markRecoveredOverdue: false);
 
     if (!isEnded) {
       _status = InfusionTimerStatus.paused;
@@ -131,7 +134,7 @@ class InfusionStopwatchTimer {
     final bool wasRunning = isRunning;
 
     if (wasRunning) {
-      _captureElapsed(now: now);
+      _captureElapsed(now: now, markRecoveredOverdue: false);
     } else {
       _refreshComputedFields();
     }
@@ -202,7 +205,10 @@ class InfusionStopwatchTimer {
     );
   }
 
-  void _captureElapsed({required DateTime now}) {
+  void _captureElapsed({
+    required DateTime now,
+    required bool markRecoveredOverdue,
+  }) {
     if (!isRunning || _lastStartedAt == null) {
       return;
     }
@@ -229,7 +235,10 @@ class InfusionStopwatchTimer {
     _refreshComputedFields();
 
     if (remainingSeconds == Duration.zero || infusedVolume >= characteristics.volume) {
-      _markEnded(completedAt: _lastStartedAt ?? now);
+      _markEnded(
+        completedAt: _lastStartedAt ?? now,
+        recoveredFromDowntime: markRecoveredOverdue,
+      );
     }
   }
 
@@ -246,8 +255,11 @@ class InfusionStopwatchTimer {
     return _phases.last;
   }
 
-  void _markEnded({required DateTime completedAt}) {
-    _status = InfusionTimerStatus.ended;
+  void _markEnded({
+    required DateTime completedAt,
+    bool recoveredFromDowntime = false,
+  }) {
+    _status = recoveredFromDowntime ? InfusionTimerStatus.recoveredOverdue : InfusionTimerStatus.ended;
     _lastStartedAt = null;
     _completedAt = completedAt;
     _refreshComputedFields();
