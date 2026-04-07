@@ -36,9 +36,10 @@ Based on review of `copilot-requirements.md` vs current codebase implementation 
 - [x] Add an explicit permission request flow instead of prompting at app startup
 - [x] Add a temporary app-bar action to request notification permissions and confirm the result with a snackbar
 - [x] Add a temporary app-bar action to fire an immediate local test notification and verify end-to-end delivery
-- [ ] Add explicit scheduled-notification support using timezone-aware scheduling
-- [ ] Add a temporary scheduled test notification to prove delayed delivery before wiring milestone logic
+- [x] Add explicit scheduled-notification support using timezone-aware scheduling
+- [x] Add a temporary scheduled test notification to prove delayed delivery before wiring milestone logic
 - [ ] Remove temporary notification test UI once milestone notifications are implemented
+- [ ] Implement the first real timer milestone notification using the current notification service
 
 ### Required Notifications
 - [ ] Implement last 10 minutes milestone notification
@@ -58,7 +59,8 @@ Based on review of `copilot-requirements.md` vs current codebase implementation 
 - [ ] Show a persistent warning in the main timer list view while notification permissions remain denied
 - [x] Implement baseline Android local notification plumbing and manual verification
 - [x] Implement baseline iOS local notification plumbing and manual verification
-- [ ] Add scheduling-specific Android and iOS setup required for timed notifications
+- [x] Add scheduling-specific Android setup required for timed notifications
+- [ ] Add any additional iOS setup required for timed notifications beyond the current baseline flow
 
 ---
 
@@ -158,7 +160,7 @@ Based on review of `copilot-requirements.md` vs current codebase implementation 
 |----------|--------|----------|
 | Timer lifecycle and restore | Core lifecycle, recovered-overdue highlighting, and acknowledgement flow implemented | Critical |
 | Persistence reliability | Core persistence and restore flow implemented; notification-related recovery still pending | Critical |
-| Notifications | Baseline permission and immediate local notification plumbing implemented; scheduling and milestone logic still pending | Critical |
+| Notifications | Permission flow plus immediate and scheduled Android local notification plumbing implemented; milestone logic still pending | Critical |
 | Disclaimer and safety warnings | Not implemented | Critical |
 | Validation | Basic create/edit validation implemented; mobile UX polish still pending | High |
 | Testing | Core timer and validation coverage added; broader UI coverage still pending | High |

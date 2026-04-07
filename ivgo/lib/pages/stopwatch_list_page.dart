@@ -160,9 +160,19 @@ class _StopwatchListPageState extends State<StopwatchListPage> with WidgetsBindi
             tooltip: 'Enable Notifications',
           ),
           IconButton(
+            icon: const Icon(Icons.alarm_outlined),
+            tooltip: 'Enable Exact Alarms',
+            onPressed: _requestExactAlarmPermission,
+          ),
+          IconButton(
             icon: const Icon(Icons.notification_add_outlined),
             tooltip: 'Send Test Notification',
             onPressed: _sendTestNotification,
+          ),
+          IconButton(
+            icon: const Icon(Icons.schedule_outlined),
+            tooltip: 'Send Test Scheduled Notification',
+            onPressed: _scheduleTestNotification,
           ),
         ],
       ),
@@ -391,5 +401,35 @@ class _StopwatchListPageState extends State<StopwatchListPage> with WidgetsBindi
           return timer.id > maxId ? timer.id : maxId;
         }) +
         1;
+  }
+
+  Future<void> _scheduleTestNotification() async {
+    await widget.notificationService.scheduleTestNotification();
+
+    if (!mounted) {
+      return;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Test scheduled notification set for 10 seconds from now'),
+      ),
+    );
+  }
+
+  Future<void> _requestExactAlarmPermission() async {
+    final bool granted = await widget.notificationService.requestExactAlarmPermission();
+
+    if (!mounted) {
+      return;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          granted ? 'Exact alarm permission granted' : 'Exact alarm permission not granted',
+        ),
+      ),
+    );
   }
 }
