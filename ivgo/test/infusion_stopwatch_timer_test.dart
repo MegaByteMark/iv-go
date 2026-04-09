@@ -35,6 +35,7 @@ void main() {
       return InfusionNotificationMilestone(
         key: key,
         title: key,
+        body: '',
         offset: offset,
         trigger: trigger,
       );
@@ -207,11 +208,11 @@ void main() {
       timer.start();
       now = now.add(const Duration(seconds: 61));
 
-      expect(timer.dueNotificationMilestones(<InfusionNotificationMilestone>[milestone]), [milestone]);
+      expect(timer.dueNotificationMilestones(milestones: <InfusionNotificationMilestone>[milestone], now: now), [milestone]);
 
       timer.markMilestoneHandled(milestone);
 
-      expect(timer.dueNotificationMilestones(<InfusionNotificationMilestone>[milestone]), isEmpty);
+      expect(timer.dueNotificationMilestones(milestones: <InfusionNotificationMilestone>[milestone], now: now), isEmpty);
 
       final encoded = jsonEncode(timer.toJson());
       final restored = InfusionTimer.fromJson(
@@ -219,7 +220,7 @@ void main() {
         nowProvider: () => now,
       );
 
-      expect(restored.dueNotificationMilestones(<InfusionNotificationMilestone>[milestone]), isEmpty);
+      expect(restored.dueNotificationMilestones(milestones: <InfusionNotificationMilestone>[milestone], now: now), isEmpty);
     });
 
     test('acknowledged recovered overdue timers keep after-end suppression after JSON restore', () {
@@ -253,7 +254,7 @@ void main() {
       expect(restored.status, InfusionTimerStatus.ended);
       expect(restored.isRecoveredOverdue, isFalse);
       expect(restored.suppressAfterEndMilestones, isTrue);
-      expect(restored.dueNotificationMilestones(<InfusionNotificationMilestone>[milestone]), isEmpty);
+      expect(restored.dueNotificationMilestones(milestones: <InfusionNotificationMilestone>[milestone], now: now), isEmpty);
     });
 
     test('serializes to valid JSON', () {

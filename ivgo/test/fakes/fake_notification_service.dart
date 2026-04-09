@@ -1,13 +1,49 @@
 import 'package:ivgo/services/notification_service.dart';
+import 'package:ivgo/domain/infusion_timer.dart';
 
 class FakeNotificationService extends NotificationService {
-  FakeNotificationService({this.permissionResult = true});
+  FakeNotificationService({
+    this.permissionResult = true,
+    this.exactAlarmPermissionResult = true,
+  });
 
   final bool permissionResult;
+  final bool exactAlarmPermissionResult;
+  int scheduledMilestoneCalls = 0;
+  int cancelledMilestoneCalls = 0;
+  int shownTestNotificationCalls = 0;
+  int scheduledTestNotificationCalls = 0;
+  final List<int> scheduledTimerIds = <int>[];
+  final List<int> cancelledTimerIds = <int>[];
 
   @override
   Future<void> initialize() async {}
 
   @override
   Future<bool> requestPermissions() async => permissionResult;
+
+  @override
+  Future<bool> requestExactAlarmPermission() async => exactAlarmPermissionResult;
+
+  @override
+  Future<void> showTestNotification() async {
+    shownTestNotificationCalls += 1;
+  }
+
+  @override
+  Future<void> scheduleTestNotification() async {
+    scheduledTestNotificationCalls += 1;
+  }
+
+  @override
+  Future<void> scheduleMilestonesForTimer(InfusionTimer timer) async {
+    scheduledMilestoneCalls += 1;
+    scheduledTimerIds.add(timer.id);
+  }
+
+  @override
+  Future<void> cancelMilestonesForTimer(InfusionTimer timer) async {
+    cancelledMilestoneCalls += 1;
+    cancelledTimerIds.add(timer.id);
+  }
 }

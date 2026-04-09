@@ -13,18 +13,21 @@ class InfusionNotificationSettingsRepository {
     InfusionNotificationMilestone(
       key: 'one_minute_remaining',
       title: 'One Minute Remaining',
+      body: 'Infusion {timer.title} has 1 minute remaining.',
       offset: const Duration(minutes: 1),
       trigger: InfusionNotificationTrigger.beforeEnd,
     ),
     InfusionNotificationMilestone(
       key: 'ten_minutes_remaining',
       title: '10 Minutes Remaining',
+      body: 'Infusion {timer.title} has 10 minutes remaining.',
       offset: const Duration(minutes: 10),
       trigger: InfusionNotificationTrigger.beforeEnd,
     ),
     InfusionNotificationMilestone(
       key: 'ended_plus_ten_minutes',
       title: 'Infusion ended 10 minutes ago',
+      body: 'Infusion {timer.title} ended 10 minutes ago.',
       offset: Duration(minutes: 10),
       trigger: InfusionNotificationTrigger.afterEnd,
     ),

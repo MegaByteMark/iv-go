@@ -334,8 +334,8 @@ class InfusionTimer {
     return (secondsAtRateGttsPerMin / 60) * (rateInGttsPerMin / gttsPerMl);
   }
 
-  List<InfusionNotificationMilestone> dueNotificationMilestones(
-    Iterable<InfusionNotificationMilestone> milestones, {
+  List<InfusionNotificationMilestone> dueNotificationMilestones({
+    required Iterable<InfusionNotificationMilestone> milestones,
     DateTime? now,
   }) {
     final List<InfusionNotificationMilestone> dueMilestones = [];

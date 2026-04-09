@@ -3,6 +3,7 @@ import 'package:ivgo/domain/infusion_notification_trigger.dart';
 class InfusionNotificationMilestone {
   final String key;
   final String title;
+  final String body;
   final Duration offset;
   final InfusionNotificationTrigger trigger;
 
@@ -10,6 +11,7 @@ class InfusionNotificationMilestone {
     required this.key,
     required this.offset,
     required this.title,
+    required this.body,
     required this.trigger,
   });
 
@@ -17,6 +19,7 @@ class InfusionNotificationMilestone {
     return {
       'key': key,
       'title': title,
+      'body': body,
       'offset': offset.inSeconds,
       'trigger': trigger.name,
     };
@@ -26,6 +29,7 @@ class InfusionNotificationMilestone {
     return InfusionNotificationMilestone(
       key: json['key'] as String,
       title: json['title'] as String,
+      body: json['body'] as String,
       offset: Duration(seconds: json['offset'] as int),
       trigger: InfusionNotificationTrigger.values.byName(
         json['trigger'] as String,

@@ -48,6 +48,8 @@ class _StopwatchListPageState extends State<StopwatchListPage> with WidgetsBindi
       infusionTimers = restoredTimers;
       _manageRefreshTimer();
     });
+
+    await _syncAllTimerNotifications();
   }
 
   @override
@@ -81,6 +83,8 @@ class _StopwatchListPageState extends State<StopwatchListPage> with WidgetsBindi
             _manageRefreshTimer();
           });
         }
+
+        unawaited(_syncAllTimerNotifications());
       case AppLifecycleState.inactive:
       case AppLifecycleState.hidden:
       case AppLifecycleState.paused:
@@ -126,7 +130,7 @@ class _StopwatchListPageState extends State<StopwatchListPage> with WidgetsBindi
                     _manageRefreshTimer();
                   });
 
-                  unawaited(saveState());
+                  unawaited(_syncTimerNotifications(timer));
                 },
                 onRemove: (theTimer) {
                   setState(() {
@@ -135,11 +139,17 @@ class _StopwatchListPageState extends State<StopwatchListPage> with WidgetsBindi
                     _manageRefreshTimer();
                   });
 
-                  unawaited(saveState());
+                  unawaited(_cancelTimerNotifications(theTimer));
                 },
                 onEdit: (theTimer) async {
-                  await _addOrEditTimer(theTimer);
+                  final InfusionTimer? savedTimer = await _addOrEditTimer(theTimer);
+
+                  if (savedTimer == null) {
+                    return;
+                  }
+
                   _manageRefreshTimer();
+                  await _syncTimerNotifications(savedTimer);
                 },
               ),
               const Divider(),
@@ -179,8 +189,14 @@ class _StopwatchListPageState extends State<StopwatchListPage> with WidgetsBindi
       body: bodyWidget,
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
-          await _addOrEditTimer(null);
+          final InfusionTimer? savedTimer = await _addOrEditTimer(null);
+
+          if (savedTimer == null) {
+            return;
+          }
+
           _manageRefreshTimer();
+          await _syncTimerNotifications(savedTimer);
         },
         tooltip: 'Add New Infusion',
         child: const Icon(Icons.add),
@@ -240,7 +256,9 @@ class _StopwatchListPageState extends State<StopwatchListPage> with WidgetsBindi
     }
   }
 
-  Future<void> _addOrEditTimer(InfusionTimer? theTimer) async {
+  Future<InfusionTimer?> _addOrEditTimer(InfusionTimer? theTimer) async {
+    InfusionTimer? savedTimer;
+
     await showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -351,13 +369,13 @@ class _StopwatchListPageState extends State<StopwatchListPage> with WidgetsBindi
                       ));
                     }
 
+                    savedTimer = theTimer;
+
                     Navigator.of(context).pop();
 
                     setState(() {
                       _manageRefreshTimer();
                     });
-
-                    unawaited(saveState());
                   },
                 ),
               ],
@@ -366,6 +384,8 @@ class _StopwatchListPageState extends State<StopwatchListPage> with WidgetsBindi
         );
       },
     );
+
+    return savedTimer;
   }
 
   String? _validateTitle(String? value) {
@@ -401,6 +421,24 @@ class _StopwatchListPageState extends State<StopwatchListPage> with WidgetsBindi
           return timer.id > maxId ? timer.id : maxId;
         }) +
         1;
+  }
+
+  Future<void> _syncTimerNotifications(InfusionTimer timer) async {
+    await widget.notificationService.scheduleMilestonesForTimer(timer);
+    await saveState();
+  }
+
+  Future<void> _syncAllTimerNotifications() async {
+    for (final timer in infusionTimers) {
+      await widget.notificationService.scheduleMilestonesForTimer(timer);
+    }
+
+    await saveState();
+  }
+
+  Future<void> _cancelTimerNotifications(InfusionTimer timer) async {
+    await widget.notificationService.cancelMilestonesForTimer(timer);
+    await saveState();
   }
 
   Future<void> _scheduleTestNotification() async {

@@ -19,6 +19,25 @@ void main() {
     await tester.pumpAndSettle();
   }
 
+  Future<void> addTimer(
+    WidgetTester tester, {
+    String title = 'Saline',
+    String volume = '6',
+    String dropFactor = '20',
+    String flowRate = '60',
+  }) async {
+    await tester.tap(find.byTooltip('Add New Infusion'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextFormField).at(0), title);
+    await tester.enterText(find.byType(TextFormField).at(1), volume);
+    await tester.enterText(find.byType(TextFormField).at(2), dropFactor);
+    await tester.enterText(find.byType(TextFormField).at(3), flowRate);
+
+    await tester.tap(find.widgetWithText(TextButton, 'Add'));
+    await tester.pumpAndSettle();
+  }
+
   testWidgets('shows the empty infusion state', (WidgetTester tester) async {
     SharedPreferences.setMockInitialValues(<String, Object>{});
 
@@ -207,6 +226,65 @@ void main() {
     await tester.pump(); // start the snackbar frame
 
     expect(find.text('Notification permissions granted'), findsOneWidget);
+  });
+
+  testWidgets('restoring persisted timers resyncs milestone notifications', (WidgetTester tester) async {
+    final timer = InfusionTimer(
+      1,
+      'Saline',
+      InfusionCharacteristics(volume: 6, dropFactor: 20, flowRate: 60),
+    );
+    final fakeNotificationService = FakeNotificationService();
+
+    SharedPreferences.setMockInitialValues(<String, Object>{
+      'infusionTimers': <String>[jsonEncode(timer.toJson())],
+    });
+
+    await pumpApp(tester, notificationService: fakeNotificationService);
+
+    expect(fakeNotificationService.scheduledMilestoneCalls, 1);
+    expect(fakeNotificationService.scheduledTimerIds, <int>[1]);
+  });
+
+  testWidgets('adding a timer schedules milestone notifications', (WidgetTester tester) async {
+    SharedPreferences.setMockInitialValues(<String, Object>{});
+    final fakeNotificationService = FakeNotificationService();
+
+    await pumpApp(tester, notificationService: fakeNotificationService);
+    await addTimer(tester);
+
+    expect(fakeNotificationService.scheduledMilestoneCalls, 1);
+    expect(fakeNotificationService.scheduledTimerIds, <int>[1]);
+  });
+
+  testWidgets('pausing a timer resyncs milestone notifications', (WidgetTester tester) async {
+    SharedPreferences.setMockInitialValues(<String, Object>{});
+    final fakeNotificationService = FakeNotificationService();
+
+    await pumpApp(tester, notificationService: fakeNotificationService);
+    await addTimer(tester);
+
+    await tester.tap(find.byTooltip('Pause'));
+    await tester.pumpAndSettle();
+
+    expect(fakeNotificationService.scheduledMilestoneCalls, 2);
+    expect(fakeNotificationService.scheduledTimerIds, <int>[1, 1]);
+  });
+
+  testWidgets('removing a timer cancels milestone notifications', (WidgetTester tester) async {
+    SharedPreferences.setMockInitialValues(<String, Object>{});
+    final fakeNotificationService = FakeNotificationService();
+
+    await pumpApp(tester, notificationService: fakeNotificationService);
+    await addTimer(tester);
+
+    await tester.tap(find.byTooltip('Remove'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(TextButton, 'Remove'));
+    await tester.pumpAndSettle();
+
+    expect(fakeNotificationService.cancelledMilestoneCalls, 1);
+    expect(fakeNotificationService.cancelledTimerIds, <int>[1]);
   });
 
   testWidgets('shows a denied snackbar when notification permissions are not granted', (WidgetTester tester) async {

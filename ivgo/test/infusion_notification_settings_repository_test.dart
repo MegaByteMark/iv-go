@@ -34,12 +34,14 @@ void main() {
         InfusionNotificationMilestone(
           key: 'custom_before_end',
           title: 'Custom Before End',
+          body: 'Your infusion will complete in 3 minutes.',
           offset: const Duration(minutes: 3),
           trigger: InfusionNotificationTrigger.beforeEnd,
         ),
         InfusionNotificationMilestone(
           key: 'custom_after_end',
           title: 'Custom After End',
+          body: 'Your infusion completed 12 minutes ago.',
           offset: const Duration(minutes: 12),
           trigger: InfusionNotificationTrigger.afterEnd,
         ),
