@@ -1,4 +1,6 @@
 import 'package:ivgo/domain/infusion_characteristics.dart';
+import 'package:ivgo/domain/infusion_notification_milestone.dart';
+import 'package:ivgo/domain/infusion_notification_trigger.dart';
 
 enum InfusionTimerStatus { paused, running, ended, recoveredOverdue }
 
@@ -14,6 +16,8 @@ class InfusionTimer {
   InfusionTimerStatus _status;
   DateTime? _lastStartedAt;
   DateTime? _completedAt;
+  Set<String> _handledMilestoneKeys = <String>{};
+  bool suppressAfterEndMilestones = false;
 
   double infusedVolume = 0;
   Duration durationInSeconds = Duration.zero;
@@ -60,12 +64,18 @@ class InfusionTimer {
           json['lastStartedAt'] ?? json['firstStartTime'],
         ),
         _completedAt = _parseDateTime(json['completedAt']),
+        _handledMilestoneKeys = (json['handledMilestoneKeys'] as List<dynamic>?)?.map((e) => e as String).toSet() ?? <String>{},
+        suppressAfterEndMilestones = json['suppressAfterEndMilestones'] as bool? ?? false,
         _phases = _parsePhases(json) {
     _refreshComputedFields();
   }
 
   void onRestore() {
     reconcile(markRecoveredOverdue: true);
+
+    if (isRecoveredOverdue) {
+      suppressAfterEndMilestones = true;
+    }
   }
 
   Map<String, dynamic> toJson() {
@@ -80,6 +90,8 @@ class InfusionTimer {
       'lastStartedAt': _lastStartedAt?.toIso8601String(),
       'completedAt': _completedAt?.toIso8601String(),
       'phases': _phases.map((phase) => phase.toJson()).toList(),
+      'handledMilestoneKeys': _handledMilestoneKeys.toList(),
+      'suppressAfterEndMilestones': suppressAfterEndMilestones,
     };
   }
 
@@ -126,6 +138,9 @@ class InfusionTimer {
     _completedAt = null;
     characteristics = _cloneCharacteristics(_initialCharacteristics);
     _phases.clear();
+    suppressAfterEndMilestones = false;
+
+    clearHandledMilestones();
     _refreshComputedFields();
   }
 
@@ -317,6 +332,63 @@ class InfusionTimer {
     }
 
     return (secondsAtRateGttsPerMin / 60) * (rateInGttsPerMin / gttsPerMl);
+  }
+
+  List<InfusionNotificationMilestone> dueNotificationMilestones(
+    Iterable<InfusionNotificationMilestone> milestones, {
+    DateTime? now,
+  }) {
+    final List<InfusionNotificationMilestone> dueMilestones = [];
+    final DateTime effectiveNow = now ?? _nowProvider();
+
+    reconcile(now: now);
+
+    for (var milestone in milestones) {
+      if (hasHandledMilestone(milestone)) {
+        continue;
+      }
+
+      if (milestone.trigger == InfusionNotificationTrigger.beforeEnd) {
+        // Only consider "before end" milestones for currently running infusions that have a known remaining time.
+        if (!isRunning || _lastStartedAt == null) {
+          continue;
+        }
+
+        if (remainingSeconds <= milestone.offset) {
+          dueMilestones.add(milestone);
+        }
+      } else if (milestone.trigger == InfusionNotificationTrigger.afterEnd) {
+        if (!isEnded || isRecoveredOverdue || completedAt == null || suppressAfterEndMilestones) {
+          continue;
+        }
+
+        if (effectiveNow.difference(completedAt!) >= milestone.offset) {
+          dueMilestones.add(milestone);
+        }
+      }
+    }
+
+    return dueMilestones;
+  }
+
+  bool hasHandledMilestone(InfusionNotificationMilestone milestone) {
+    return _handledMilestoneKeys.contains(milestone.key);
+  }
+
+  void markMilestoneHandled(InfusionNotificationMilestone milestone) {
+    if (hasHandledMilestone(milestone)) {
+      return;
+    }
+
+    _handledMilestoneKeys.add(milestone.key);
+  }
+
+  void clearHandledMilestones() {
+    if (_handledMilestoneKeys.isEmpty) {
+      return;
+    }
+
+    _handledMilestoneKeys.clear();
   }
 }
 

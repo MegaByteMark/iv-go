@@ -2,6 +2,8 @@ import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ivgo/domain/infusion_characteristics.dart';
+import 'package:ivgo/domain/infusion_notification_milestone.dart';
+import 'package:ivgo/domain/infusion_notification_trigger.dart';
 import 'package:ivgo/domain/infusion_timer.dart';
 
 void main() {
@@ -22,6 +24,19 @@ void main() {
           flowRate: flowRate,
         ),
         nowProvider: () => now,
+      );
+    }
+
+    InfusionNotificationMilestone createMilestone({
+      required String key,
+      required Duration offset,
+      required InfusionNotificationTrigger trigger,
+    }) {
+      return InfusionNotificationMilestone(
+        key: key,
+        title: key,
+        offset: offset,
+        trigger: trigger,
       );
     }
 
@@ -179,6 +194,66 @@ void main() {
       expect(restored.isEnded, isTrue);
       expect(restored.remainingSeconds, Duration.zero);
       expect(restored.infusedVolume, closeTo(6, 0.0001));
+    });
+
+    test('handled milestones survive JSON restore and do not re-fire in the same lifecycle', () {
+      final timer = createTimer(volume: 6);
+      final milestone = createMilestone(
+        key: 'one_minute_remaining',
+        offset: const Duration(minutes: 1),
+        trigger: InfusionNotificationTrigger.beforeEnd,
+      );
+
+      timer.start();
+      now = now.add(const Duration(seconds: 61));
+
+      expect(timer.dueNotificationMilestones(<InfusionNotificationMilestone>[milestone]), [milestone]);
+
+      timer.markMilestoneHandled(milestone);
+
+      expect(timer.dueNotificationMilestones(<InfusionNotificationMilestone>[milestone]), isEmpty);
+
+      final encoded = jsonEncode(timer.toJson());
+      final restored = InfusionTimer.fromJson(
+        jsonDecode(encoded) as Map<String, dynamic>,
+        nowProvider: () => now,
+      );
+
+      expect(restored.dueNotificationMilestones(<InfusionNotificationMilestone>[milestone]), isEmpty);
+    });
+
+    test('acknowledged recovered overdue timers keep after-end suppression after JSON restore', () {
+      final timer = createTimer(volume: 6);
+      final milestone = createMilestone(
+        key: 'ended_plus_ten_minutes',
+        offset: const Duration(minutes: 10),
+        trigger: InfusionNotificationTrigger.afterEnd,
+      );
+
+      timer.start();
+      now = now.add(const Duration(seconds: 30));
+      final encodedRunning = jsonEncode(timer.toJson());
+
+      now = now.add(const Duration(minutes: 5));
+      final recovered = InfusionTimer.fromJson(
+        jsonDecode(encodedRunning) as Map<String, dynamic>,
+        nowProvider: () => now,
+      );
+      recovered.onRestore();
+      recovered.acknowledgeRecoveredOverdue();
+
+      final encodedAcknowledged = jsonEncode(recovered.toJson());
+
+      now = now.add(const Duration(minutes: 15));
+      final restored = InfusionTimer.fromJson(
+        jsonDecode(encodedAcknowledged) as Map<String, dynamic>,
+        nowProvider: () => now,
+      );
+
+      expect(restored.status, InfusionTimerStatus.ended);
+      expect(restored.isRecoveredOverdue, isFalse);
+      expect(restored.suppressAfterEndMilestones, isTrue);
+      expect(restored.dueNotificationMilestones(<InfusionNotificationMilestone>[milestone]), isEmpty);
     });
 
     test('serializes to valid JSON', () {

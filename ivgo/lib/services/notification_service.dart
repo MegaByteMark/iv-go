@@ -1,4 +1,5 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:ivgo/domain/infusion_timer.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 
@@ -95,4 +96,12 @@ class NotificationService {
       notificationDetails: notificationDetails,
     );
   }
+
+  Future<void> scheduleMilestonesForTimer(InfusionTimer timer) async {
+    
+  }
+
+  Future<void> cancelMilestonesForTimer(InfusionTimer timer) async {
+    
+  } 
 }
