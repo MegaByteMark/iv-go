@@ -1,28 +1,25 @@
 import 'package:ivgo/domain/infusion_characteristics.dart';
 import 'package:ivgo/domain/infusion_notification_milestone.dart';
 import 'package:ivgo/domain/infusion_notification_trigger.dart';
+import 'package:ivgo/domain/infusion_timer_status.dart';
 
-enum InfusionTimerStatus { paused, running, ended, recoveredOverdue }
-
-/// Tracks the progress and restore state of a single infusion.
 class InfusionTimer {
   final InfusionCharacteristics _initialCharacteristics;
   final DateTime Function() _nowProvider;
   final List<_InfusionPhase> _phases;
 
-  int id;
-  String title;
-  InfusionCharacteristics characteristics;
   InfusionTimerStatus _status;
   DateTime? _lastStartedAt;
   DateTime? _completedAt;
   Set<String> _handledMilestoneKeys = <String>{};
-  bool suppressAfterEndMilestones = false;
 
+  int id;
+  String title;
+  InfusionCharacteristics characteristics;
+  bool suppressAfterEndMilestones = false;
   double infusedVolume = 0;
   Duration durationInSeconds = Duration.zero;
   Duration remainingSeconds = Duration.zero;
-
   bool get isRunning => _status == InfusionTimerStatus.running;
   bool get isPaused => _status == InfusionTimerStatus.paused;
   bool get isEnded => _status == InfusionTimerStatus.ended || _status == InfusionTimerStatus.recoveredOverdue;
@@ -100,6 +97,7 @@ class InfusionTimer {
       now: now ?? _nowProvider(),
       markRecoveredOverdue: markRecoveredOverdue,
     );
+
     _refreshComputedFields();
   }
 
@@ -166,6 +164,7 @@ class InfusionTimer {
 
     if (infusedVolume >= characteristics.volume) {
       _markEnded(completedAt: _completedAt ?? now);
+      
       return;
     }
 

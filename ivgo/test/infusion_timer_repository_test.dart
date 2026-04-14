@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ivgo/domain/infusion_characteristics.dart';
 import 'package:ivgo/domain/infusion_timer.dart';
+import 'package:ivgo/domain/infusion_timer_status.dart';
 import 'package:ivgo/repositories/infusion_timer_repository.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 

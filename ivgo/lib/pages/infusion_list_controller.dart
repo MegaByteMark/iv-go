@@ -95,6 +95,7 @@ class InfusionListController {
     _replaceInfusionTimers(List<InfusionTimer>.of(currentTimers)..add(timer));
     _manageRefreshTimer();
     await _syncTimerNotifications(timer);
+
     return timer;
   }
 
@@ -108,6 +109,7 @@ class InfusionListController {
     _refreshInfusionTimers();
     _manageRefreshTimer();
     await _syncTimerNotifications(timer);
+
     return timer;
   }
 
@@ -173,6 +175,7 @@ class InfusionListController {
           _refreshInfusionTimers();
         }
       });
+      
       return;
     }
 
