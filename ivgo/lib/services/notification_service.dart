@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:ivgo/domain/infusion_notification_milestone.dart';
 import 'package:ivgo/domain/infusion_notification_trigger.dart';
@@ -5,6 +6,9 @@ import 'package:ivgo/domain/infusion_timer.dart';
 import 'package:ivgo/repositories/infusion_notification_settings_repository.dart';
 import 'package:ivgo/services/adapters/flutter_local_notification_client.dart';
 import 'package:ivgo/services/adapters/notification_client.dart';
+import 'package:ivgo/services/notification_permission_status.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:signals_flutter/signals_flutter.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 
@@ -14,19 +18,48 @@ class NotificationService {
     FlutterLocalNotificationsPlugin? plugin,
     NotificationClient? notificationClient,
     DateTime Function()? nowProvider,
-  })  : _settingsRepository = settingsRepository ?? InfusionNotificationSettingsRepository(),
-        _plugin = plugin ?? FlutterLocalNotificationsPlugin(),
-        _notificationClient = notificationClient ?? FlutterLocalNotificationClient(plugin ?? FlutterLocalNotificationsPlugin()),
-        _nowProvider = nowProvider ?? DateTime.now;
+    Future<SharedPreferences> Function()? sharedPreferencesFactory,
+  }) : this._(
+          settingsRepository: settingsRepository ?? InfusionNotificationSettingsRepository(),
+          plugin: plugin ?? FlutterLocalNotificationsPlugin(),
+          notificationClient: notificationClient,
+          nowProvider: nowProvider ?? DateTime.now,
+          sharedPreferencesFactory: sharedPreferencesFactory ?? SharedPreferences.getInstance,
+        );
+
+  NotificationService._({
+    required InfusionNotificationSettingsRepository settingsRepository,
+    required FlutterLocalNotificationsPlugin plugin,
+    required NotificationClient? notificationClient,
+    required DateTime Function() nowProvider,
+    required Future<SharedPreferences> Function() sharedPreferencesFactory,
+  })  : _settingsRepository = settingsRepository,
+        _plugin = plugin,
+        _notificationClient = notificationClient ?? FlutterLocalNotificationClient(plugin),
+        _nowProvider = nowProvider,
+        _sharedPreferencesFactory = sharedPreferencesFactory;
 
   final FlutterLocalNotificationsPlugin _plugin;
   final NotificationClient _notificationClient;
   final InfusionNotificationSettingsRepository _settingsRepository;
   final DateTime Function() _nowProvider;
+  final Future<SharedPreferences> Function() _sharedPreferencesFactory;
+  final _permissionStatus = signal(
+    NotificationPermissionStatus.unknown,
+    debugLabel: 'notificationPermissionStatus',
+  );
 
   static const String _milestoneChannelId = 'ivgo_milestones';
   static const String _milestoneChannelName = 'IVGo Milestones';
   static const String _milestoneChannelDescription = 'Notifications for infusion milestones';
+  static const String _permissionRequestedStorageKey = 'hasRequestedNotificationPermission';
+
+  ReadonlySignal<NotificationPermissionStatus> get permissionStatus => _permissionStatus;
+
+  @protected
+  void setPermissionStatus(NotificationPermissionStatus status) {
+    _permissionStatus.value = status;
+  }
 
   Future<void> initialize() async {
     tz.initializeTimeZones();
@@ -44,6 +77,21 @@ class NotificationService {
     );
 
     await _plugin.initialize(settings: initializationSettings);
+
+    try {
+      await refreshPermissionStatus();
+    } catch (e) {
+      debugPrint('Error checking notification permissions during initialization: $e');
+      setPermissionStatus(NotificationPermissionStatus.unknown);
+    }
+  }
+
+  Future<NotificationPermissionStatus> refreshPermissionStatus() async {
+    final NotificationPermissionStatus status = await _notificationClient.getPermissionStatus(
+      hasRequestedPermission: await _hasRequestedPermission(),
+    );
+    setPermissionStatus(status);
+    return status;
   }
 
   Future<void> scheduleTestNotification() async {
@@ -72,19 +120,10 @@ class NotificationService {
   }
 
   Future<bool> requestPermissions() async {
-    final androidPlugin = _plugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
-
-    if (androidPlugin != null) {
-      return await androidPlugin.requestNotificationsPermission() ?? false;
-    }
-
-    final iosPlugin = _plugin.resolvePlatformSpecificImplementation<IOSFlutterLocalNotificationsPlugin>();
-
-    if (iosPlugin != null) {
-      return await iosPlugin.requestPermissions(alert: true, badge: true, sound: true) ?? false;
-    }
-
-    throw UnsupportedError('Unsupported platform for requesting notification permissions');
+    final bool granted = await _notificationClient.requestPermissions();
+    await _markPermissionRequested();
+    await refreshPermissionStatus();
+    return granted;
   }
 
   Future<bool> requestExactAlarmPermission() async {
@@ -95,6 +134,16 @@ class NotificationService {
     }
 
     return await androidPlugin.requestExactAlarmsPermission() ?? false;
+  }
+
+  Future<bool> _hasRequestedPermission() async {
+    final SharedPreferences sharedPreferences = await _sharedPreferencesFactory();
+    return sharedPreferences.getBool(_permissionRequestedStorageKey) ?? false;
+  }
+
+  Future<void> _markPermissionRequested() async {
+    final SharedPreferences sharedPreferences = await _sharedPreferencesFactory();
+    await sharedPreferences.setBool(_permissionRequestedStorageKey, true);
   }
 
   Future<void> showTestNotification() async {

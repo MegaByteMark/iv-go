@@ -5,7 +5,9 @@ import 'package:ivgo/domain/infusion_notification_milestone.dart';
 import 'package:ivgo/domain/infusion_notification_trigger.dart';
 import 'package:ivgo/domain/infusion_timer.dart';
 import 'package:ivgo/repositories/infusion_notification_settings_repository.dart';
+import 'package:ivgo/services/notification_permission_status.dart';
 import 'package:ivgo/services/notification_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 
@@ -52,6 +54,7 @@ void main() {
     }
 
     setUp(() {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
       tz.initializeTimeZones();
       tz.setLocalLocation(tz.getLocation('UTC'));
 
@@ -157,6 +160,66 @@ void main() {
       await service.cancelMilestonesForTimer(timer);
 
       expect(fakeNotificationClient.cancelledIds, <int>[101, 102]);
+    });
+
+    test('refreshPermissionStatus stays unknown before any permission prompt', () async {
+      final NotificationService service = NotificationService(
+        nowProvider: () => now,
+        notificationClient: fakeNotificationClient,
+        settingsRepository: _FakeNotificationSettingsRepository(
+          const <InfusionNotificationMilestone>[],
+        ),
+      );
+
+      final NotificationPermissionStatus status = await service.refreshPermissionStatus();
+
+      expect(status, NotificationPermissionStatus.unknown);
+      expect(
+        service.permissionStatus.value,
+        NotificationPermissionStatus.unknown,
+      );
+    });
+
+    test('requestPermissions persists denied status after a rejection', () async {
+      fakeNotificationClient.permissionRequestResult = false;
+
+      final NotificationService service = NotificationService(
+        nowProvider: () => now,
+        notificationClient: fakeNotificationClient,
+        settingsRepository: _FakeNotificationSettingsRepository(
+          const <InfusionNotificationMilestone>[],
+        ),
+      );
+
+      final bool granted = await service.requestPermissions();
+      fakeNotificationClient.permissionStatus = NotificationPermissionStatus.unknown;
+
+      final NotificationPermissionStatus refreshedStatus = await service.refreshPermissionStatus();
+
+      expect(granted, isFalse);
+      expect(
+        service.permissionStatus.value,
+        NotificationPermissionStatus.denied,
+      );
+      expect(refreshedStatus, NotificationPermissionStatus.denied);
+    });
+
+    test('requestPermissions updates status to granted when accepted', () async {
+      final NotificationService service = NotificationService(
+        nowProvider: () => now,
+        notificationClient: fakeNotificationClient,
+        settingsRepository: _FakeNotificationSettingsRepository(
+          const <InfusionNotificationMilestone>[],
+        ),
+      );
+
+      final bool granted = await service.requestPermissions();
+
+      expect(granted, isTrue);
+      expect(
+        service.permissionStatus.value,
+        NotificationPermissionStatus.granted,
+      );
     });
   });
 }

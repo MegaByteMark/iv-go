@@ -1,6 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:ivgo/pages/stopwatch_list_page.dart';
+import 'package:ivgo/pages/infusion_list_page.dart';
 import 'package:ivgo/services/notification_service.dart';
 
 Future<void> main() async {
@@ -29,7 +29,7 @@ class IVGoApp extends StatelessWidget {
           primaryColor: Colors.lightBlue,
         ),
       ),
-      home: StopwatchListPage(title: 'Active Infusions', notificationService: notificationService),
+      home: InfusionListPage(title: 'Active Infusions', notificationService: notificationService),
     );
   }
 }

@@ -1,5 +1,6 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:ivgo/services/adapters/notification_client.dart';
+import 'package:ivgo/services/notification_permission_status.dart';
 import 'package:timezone/timezone.dart' as tz;
 
 class FakeNotificationClient implements NotificationClient {
@@ -7,6 +8,25 @@ class FakeNotificationClient implements NotificationClient {
   final List<ScheduledNotification> scheduledNotifications = <ScheduledNotification>[];
   final List<int> cancelledIds = <int>[];
   List<PendingNotificationRequest> pendingNotifications = <PendingNotificationRequest>[];
+  NotificationPermissionStatus permissionStatus = NotificationPermissionStatus.unknown;
+  bool permissionRequestResult = true;
+
+  @override
+  Future<NotificationPermissionStatus> getPermissionStatus({
+    required bool hasRequestedPermission,
+  }) async {
+    if (permissionStatus == NotificationPermissionStatus.unknown && hasRequestedPermission) {
+      return NotificationPermissionStatus.denied;
+    }
+
+    return permissionStatus;
+  }
+
+  @override
+  Future<bool> requestPermissions() async {
+    permissionStatus = permissionRequestResult ? NotificationPermissionStatus.granted : NotificationPermissionStatus.denied;
+    return permissionRequestResult;
+  }
 
   @override
   Future<void> cancel({required int id}) async {

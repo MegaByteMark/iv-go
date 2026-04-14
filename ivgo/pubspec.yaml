@@ -38,6 +38,7 @@ dependencies:
   cupertino_icons: ^1.0.8
   gap: ^3.0.1
   timezone: ^0.10.1
+  signals_flutter: ^6.3.0
 
 dev_dependencies:
   flutter_test:

@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ivgo/domain/infusion_characteristics.dart';
 import 'package:ivgo/domain/infusion_timer.dart';
 import 'package:ivgo/main.dart';
+import 'package:ivgo/services/notification_permission_status.dart';
 import 'package:ivgo/services/notification_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -228,6 +229,19 @@ void main() {
     expect(find.text('Notification permissions granted'), findsOneWidget);
   });
 
+  testWidgets('does not show the permission warning banner before a denial', (WidgetTester tester) async {
+    SharedPreferences.setMockInitialValues(<String, Object>{});
+
+    await pumpApp(tester);
+
+    expect(
+      find.text(
+        'Notification permissions denied. Background alerts will not function. Please monitor timers in-app.',
+      ),
+      findsNothing,
+    );
+  });
+
   testWidgets('restoring persisted timers resyncs milestone notifications', (WidgetTester tester) async {
     final timer = InfusionTimer(
       1,
@@ -294,8 +308,32 @@ void main() {
     );
 
     await tester.tap(find.byTooltip('Enable Notifications'));
-    await tester.pump();
+    await tester.pumpAndSettle();
 
     expect(find.text('Notification permissions not granted'), findsOneWidget);
+    expect(
+      find.text(
+        'Notification permissions denied. Background alerts will not function. Please monitor timers in-app.',
+      ),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('shows the permission warning banner for an existing denied state', (WidgetTester tester) async {
+    SharedPreferences.setMockInitialValues(<String, Object>{});
+
+    await pumpApp(
+      tester,
+      notificationService: FakeNotificationService(
+        initialPermissionStatus: NotificationPermissionStatus.denied,
+      ),
+    );
+
+    expect(
+      find.text(
+        'Notification permissions denied. Background alerts will not function. Please monitor timers in-app.',
+      ),
+      findsOneWidget,
+    );
   });
 }

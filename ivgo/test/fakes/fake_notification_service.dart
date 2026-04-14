@@ -1,11 +1,15 @@
 import 'package:ivgo/services/notification_service.dart';
+import 'package:ivgo/services/notification_permission_status.dart';
 import 'package:ivgo/domain/infusion_timer.dart';
 
 class FakeNotificationService extends NotificationService {
   FakeNotificationService({
     this.permissionResult = true,
     this.exactAlarmPermissionResult = true,
-  });
+    NotificationPermissionStatus initialPermissionStatus = NotificationPermissionStatus.unknown,
+  }) {
+    setPermissionStatus(initialPermissionStatus);
+  }
 
   final bool permissionResult;
   final bool exactAlarmPermissionResult;
@@ -20,7 +24,12 @@ class FakeNotificationService extends NotificationService {
   Future<void> initialize() async {}
 
   @override
-  Future<bool> requestPermissions() async => permissionResult;
+  Future<bool> requestPermissions() async {
+    setPermissionStatus(
+      permissionResult ? NotificationPermissionStatus.granted : NotificationPermissionStatus.denied,
+    );
+    return permissionResult;
+  }
 
   @override
   Future<bool> requestExactAlarmPermission() async => exactAlarmPermissionResult;
