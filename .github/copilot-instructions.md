@@ -4,7 +4,7 @@
 
 - The Flutter app lives under `ivgo/`.
 - App code is mainly in `ivgo/lib/` and tests are in `ivgo/test/`.
-- Platform folders under `ivgo/android/`, `ivgo/ios/`, `ivgo/macos/`, `ivgo/linux/`, `ivgo/windows/`, and `ivgo/web/` should only be changed when the task requires platform-specific work.
+- Platform folders under `ivgo/android/`, `ivgo/ios/`, `ivgo/macos/`, and `ivgo/windows/` should only be changed when the task requires platform-specific work.
 
 ## Code Style
 
@@ -15,7 +15,7 @@
 ## Architecture
 
 - `ivgo/lib/main.dart` wires the app shell and theme.
-- `ivgo/lib/pages/stopwatch_list_page.dart` owns the main infusion list UI and dialog flow.
+- `ivgo/lib/pages/infusion_list_page.dart` owns the main infusion list UI and dialog flow.
 - Timer behavior is encapsulated in `ivgo/lib/domain/infusion_timer.dart`.
 - Persistence currently uses `shared_preferences` via `ivgo/lib/repositories/infusion_timer_repository.dart`; changes to timer data should preserve save and restore behavior.
 

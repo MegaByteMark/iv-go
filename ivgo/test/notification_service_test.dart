@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ivgo/domain/infusion_characteristics.dart';
@@ -220,6 +221,42 @@ void main() {
         service.permissionStatus.value,
         NotificationPermissionStatus.granted,
       );
+    });
+
+    test('refreshPermissionStatus treats windows as granted without a prompt', () async {
+      final NotificationService service = NotificationService(
+        nowProvider: () => now,
+        notificationClient: fakeNotificationClient,
+        settingsRepository: _FakeNotificationSettingsRepository(
+          const <InfusionNotificationMilestone>[],
+        ),
+        targetPlatform: TargetPlatform.windows,
+      );
+
+      final NotificationPermissionStatus status = await service.refreshPermissionStatus();
+
+      expect(status, NotificationPermissionStatus.granted);
+      expect(service.permissionStatus.value, NotificationPermissionStatus.granted);
+      expect(fakeNotificationClient.getPermissionStatusCallCount, 0);
+    });
+
+    test('requestPermissions returns granted on windows without prompting the client', () async {
+      fakeNotificationClient.permissionRequestResult = false;
+
+      final NotificationService service = NotificationService(
+        nowProvider: () => now,
+        notificationClient: fakeNotificationClient,
+        settingsRepository: _FakeNotificationSettingsRepository(
+          const <InfusionNotificationMilestone>[],
+        ),
+        targetPlatform: TargetPlatform.windows,
+      );
+
+      final bool granted = await service.requestPermissions();
+
+      expect(granted, isTrue);
+      expect(service.permissionStatus.value, NotificationPermissionStatus.granted);
+      expect(fakeNotificationClient.requestPermissionsCallCount, 0);
     });
   });
 }

@@ -10,11 +10,15 @@ class FakeNotificationClient implements NotificationClient {
   List<PendingNotificationRequest> pendingNotifications = <PendingNotificationRequest>[];
   NotificationPermissionStatus permissionStatus = NotificationPermissionStatus.unknown;
   bool permissionRequestResult = true;
+  int getPermissionStatusCallCount = 0;
+  int requestPermissionsCallCount = 0;
 
   @override
   Future<NotificationPermissionStatus> getPermissionStatus({
     required bool hasRequestedPermission,
   }) async {
+    getPermissionStatusCallCount += 1;
+
     if (permissionStatus == NotificationPermissionStatus.unknown && hasRequestedPermission) {
       return NotificationPermissionStatus.denied;
     }
@@ -24,6 +28,7 @@ class FakeNotificationClient implements NotificationClient {
 
   @override
   Future<bool> requestPermissions() async {
+    requestPermissionsCallCount += 1;
     permissionStatus = permissionRequestResult ? NotificationPermissionStatus.granted : NotificationPermissionStatus.denied;
     return permissionRequestResult;
   }

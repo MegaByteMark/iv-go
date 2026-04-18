@@ -19,12 +19,16 @@ class NotificationService {
     NotificationClient? notificationClient,
     DateTime Function()? nowProvider,
     Future<SharedPreferences> Function()? sharedPreferencesFactory,
+    TargetPlatform? targetPlatform,
+    bool? isWeb,
   }) : this._(
           settingsRepository: settingsRepository ?? InfusionNotificationSettingsRepository(),
           plugin: plugin ?? FlutterLocalNotificationsPlugin(),
           notificationClient: notificationClient,
           nowProvider: nowProvider ?? DateTime.now,
           sharedPreferencesFactory: sharedPreferencesFactory ?? SharedPreferences.getInstance,
+          targetPlatform: targetPlatform ?? defaultTargetPlatform,
+          isWeb: isWeb ?? kIsWeb,
         );
 
   NotificationService._({
@@ -33,17 +37,23 @@ class NotificationService {
     required NotificationClient? notificationClient,
     required DateTime Function() nowProvider,
     required Future<SharedPreferences> Function() sharedPreferencesFactory,
+    required TargetPlatform targetPlatform,
+    required bool isWeb,
   })  : _settingsRepository = settingsRepository,
         _plugin = plugin,
         _notificationClient = notificationClient ?? FlutterLocalNotificationClient(plugin),
         _nowProvider = nowProvider,
-        _sharedPreferencesFactory = sharedPreferencesFactory;
+        _sharedPreferencesFactory = sharedPreferencesFactory,
+        _targetPlatform = targetPlatform,
+        _isWeb = isWeb;
 
   final FlutterLocalNotificationsPlugin _plugin;
   final NotificationClient _notificationClient;
   final InfusionNotificationSettingsRepository _settingsRepository;
   final DateTime Function() _nowProvider;
   final Future<SharedPreferences> Function() _sharedPreferencesFactory;
+  final TargetPlatform _targetPlatform;
+  final bool _isWeb;
   final _permissionStatus = signal(
     NotificationPermissionStatus.unknown,
     debugLabel: 'notificationPermissionStatus',
@@ -53,8 +63,29 @@ class NotificationService {
   static const String _milestoneChannelName = 'IVGo Milestones';
   static const String _milestoneChannelDescription = 'Notifications for infusion milestones';
   static const String _permissionRequestedStorageKey = 'hasRequestedNotificationPermission';
+  static const String _windowsAppUserModelId = 'MarkHart.IVGo.Desktop.1';
+  static const String _windowsGuid = '7d9f4c3e-1f8f-4c6a-a2d2-4f0a8b2f6e31';
 
   ReadonlySignal<NotificationPermissionStatus> get permissionStatus => _permissionStatus;
+
+  bool get supportsNotificationPermissionRequest {
+    if (_isWeb) {
+      return false;
+    }
+
+    return switch (_targetPlatform) {
+      TargetPlatform.android || TargetPlatform.iOS || TargetPlatform.macOS => true,
+      _ => false,
+    };
+  }
+
+  bool get supportsExactAlarmPermissionRequest {
+    return !_isWeb && _targetPlatform == TargetPlatform.android;
+  }
+
+  bool get _usesImplicitNotificationPermission {
+    return !_isWeb && _targetPlatform == TargetPlatform.windows;
+  }
 
   @protected
   void setPermissionStatus(NotificationPermissionStatus status) {
@@ -64,19 +95,7 @@ class NotificationService {
   Future<void> initialize() async {
     tz.initializeTimeZones();
 
-    const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
-    const darwinSettings = DarwinInitializationSettings(
-      requestAlertPermission: false,
-      requestBadgePermission: false,
-      requestSoundPermission: false,
-    );
-
-    const initializationSettings = InitializationSettings(
-      android: androidSettings,
-      iOS: darwinSettings,
-    );
-
-    await _plugin.initialize(settings: initializationSettings);
+    await _plugin.initialize(settings: _initializationSettings());
 
     try {
       await refreshPermissionStatus();
@@ -87,10 +106,17 @@ class NotificationService {
   }
 
   Future<NotificationPermissionStatus> refreshPermissionStatus() async {
+    if (_usesImplicitNotificationPermission) {
+      setPermissionStatus(NotificationPermissionStatus.granted);
+
+      return NotificationPermissionStatus.granted;
+    }
+
     final NotificationPermissionStatus status = await _notificationClient.getPermissionStatus(
       hasRequestedPermission: await _hasRequestedPermission(),
     );
     setPermissionStatus(status);
+    
     return status;
   }
 
@@ -104,6 +130,8 @@ class NotificationService {
         priority: Priority.high,
       ),
       iOS: DarwinNotificationDetails(),
+      macOS: DarwinNotificationDetails(),
+      windows: WindowsNotificationDetails(),
     );
 
     final tz.TZDateTime scheduledDate = tz.TZDateTime.now(tz.local).add(const Duration(seconds: 10));
@@ -120,13 +148,30 @@ class NotificationService {
   }
 
   Future<bool> requestPermissions() async {
+    if (_usesImplicitNotificationPermission) {
+      setPermissionStatus(NotificationPermissionStatus.granted);
+
+      return true;
+    }
+
+    if (!supportsNotificationPermissionRequest) {
+      setPermissionStatus(NotificationPermissionStatus.unknown);
+
+      return false;
+    }
+
     final bool granted = await _notificationClient.requestPermissions();
     await _markPermissionRequested();
     await refreshPermissionStatus();
+
     return granted;
   }
 
   Future<bool> requestExactAlarmPermission() async {
+    if (!supportsExactAlarmPermissionRequest) {
+      return true;
+    }
+
     final androidPlugin = _plugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
 
     if (androidPlugin == null) {
@@ -138,11 +183,13 @@ class NotificationService {
 
   Future<bool> _hasRequestedPermission() async {
     final SharedPreferences sharedPreferences = await _sharedPreferencesFactory();
+
     return sharedPreferences.getBool(_permissionRequestedStorageKey) ?? false;
   }
 
   Future<void> _markPermissionRequested() async {
     final SharedPreferences sharedPreferences = await _sharedPreferencesFactory();
+    
     await sharedPreferences.setBool(_permissionRequestedStorageKey, true);
   }
 
@@ -156,6 +203,8 @@ class NotificationService {
         priority: Priority.high,
       ),
       iOS: DarwinNotificationDetails(),
+      macOS: DarwinNotificationDetails(),
+      windows: WindowsNotificationDetails(),
     );
 
     await _plugin.show(
@@ -355,6 +404,29 @@ class NotificationService {
         priority: Priority.high,
       ),
       iOS: DarwinNotificationDetails(),
+      macOS: DarwinNotificationDetails(),
+      windows: WindowsNotificationDetails(),
+    );
+  }
+
+  InitializationSettings _initializationSettings() {
+    const AndroidInitializationSettings androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const DarwinInitializationSettings darwinSettings = DarwinInitializationSettings(
+      requestAlertPermission: false,
+      requestBadgePermission: false,
+      requestSoundPermission: false,
+    );
+    const WindowsInitializationSettings windowsSettings = WindowsInitializationSettings(
+      appName: 'IVGo',
+      appUserModelId: _windowsAppUserModelId,
+      guid: _windowsGuid,
+    );
+
+    return const InitializationSettings(
+      android: androidSettings,
+      iOS: darwinSettings,
+      macOS: darwinSettings,
+      windows: windowsSettings,
     );
   }
 }

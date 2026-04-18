@@ -27,8 +27,7 @@ class InfusionListPage extends StatefulWidget {
   State<InfusionListPage> createState() => _InfusionListPageState();
 }
 
-class _InfusionListPageState extends State<InfusionListPage>
-    with WidgetsBindingObserver {
+class _InfusionListPageState extends State<InfusionListPage> with WidgetsBindingObserver {
   late final InfusionListController _controller = InfusionListController(
     timerRepository: widget.timerRepository,
     notificationService: widget.notificationService,
@@ -61,16 +60,18 @@ class _InfusionListPageState extends State<InfusionListPage>
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         title: Text(widget.title),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications),
-            onPressed: _requestNotificationPermissions,
-            tooltip: 'Enable Notifications',
-          ),
-          IconButton(
-            icon: const Icon(Icons.alarm_outlined),
-            tooltip: 'Enable Exact Alarms',
-            onPressed: _requestExactAlarmPermission,
-          ),
+          if (widget.notificationService.supportsNotificationPermissionRequest)
+            IconButton(
+              icon: const Icon(Icons.notifications),
+              onPressed: _requestNotificationPermissions,
+              tooltip: 'Enable Notifications',
+            ),
+          if (widget.notificationService.supportsExactAlarmPermissionRequest)
+            IconButton(
+              icon: const Icon(Icons.alarm_outlined),
+              tooltip: 'Enable Exact Alarms',
+              onPressed: _requestExactAlarmPermission,
+            ),
           IconButton(
             icon: const Icon(Icons.notification_add_outlined),
             tooltip: 'Send Test Notification',
@@ -90,8 +91,7 @@ class _InfusionListPageState extends State<InfusionListPage>
           ),
           Expanded(
             child: Watch((context) {
-              final List<InfusionTimer> infusionTimers =
-                  _controller.infusionTimers.value;
+              final List<InfusionTimer> infusionTimers = _controller.infusionTimers.value;
 
               if (infusionTimers.isEmpty) {
                 return Center(
@@ -118,13 +118,10 @@ class _InfusionListPageState extends State<InfusionListPage>
                     children: [
                       InfusionRow(
                         timer,
-                        onChanged: (_) =>
-                            unawaited(_controller.handleTimerChanged(timer)),
-                        onRemove: (theTimer) =>
-                            unawaited(_controller.removeTimer(theTimer)),
+                        onChanged: (_) => unawaited(_controller.handleTimerChanged(timer)),
+                        onRemove: (theTimer) => unawaited(_controller.removeTimer(theTimer)),
                         onEdit: (theTimer) async {
-                          final InfusionTimer? savedTimer =
-                              await _addOrEditTimer(theTimer);
+                          final InfusionTimer? savedTimer = await _addOrEditTimer(theTimer);
 
                           if (savedTimer == null) {
                             return;
@@ -174,17 +171,14 @@ class _InfusionListPageState extends State<InfusionListPage>
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          granted
-              ? 'Notification permissions granted'
-              : 'Notification permissions not granted',
+          granted ? 'Notification permissions granted' : 'Notification permissions not granted',
         ),
       ),
     );
   }
 
   Future<InfusionTimer?> _addOrEditTimer(InfusionTimer? theTimer) async {
-    final _InfusionTimerFormData? formData =
-        await showDialog<_InfusionTimerFormData>(
+    final _InfusionTimerFormData? formData = await showDialog<_InfusionTimerFormData>(
       context: context,
       builder: (BuildContext context) {
         return _InfusionTimerDialog(
@@ -250,15 +244,13 @@ class _InfusionListPageState extends State<InfusionListPage>
 
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content:
-            Text('Test scheduled notification set for 10 seconds from now'),
+        content: Text('Test scheduled notification set for 10 seconds from now'),
       ),
     );
   }
 
   Future<void> _requestExactAlarmPermission() async {
-    final bool granted =
-        await widget.notificationService.requestExactAlarmPermission();
+    final bool granted = await widget.notificationService.requestExactAlarmPermission();
 
     if (!mounted) {
       return;
@@ -267,9 +259,7 @@ class _InfusionListPageState extends State<InfusionListPage>
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          granted
-              ? 'Exact alarm permission granted'
-              : 'Exact alarm permission not granted',
+          granted ? 'Exact alarm permission granted' : 'Exact alarm permission not granted',
         ),
       ),
     );
@@ -285,15 +275,13 @@ class _InfusionTimerDialog extends StatefulWidget {
 
   final InfusionTimer? initialTimer;
   final String? Function(String? value) titleValidator;
-  final String? Function(String? value, String fieldName)
-      positiveNumberValidator;
+  final String? Function(String? value, String fieldName) positiveNumberValidator;
 
   @override
   State<_InfusionTimerDialog> createState() => _InfusionTimerDialogState();
 }
 
-class _InfusionTimerDialogState extends State<_InfusionTimerDialog>
-    with SignalsMixin {
+class _InfusionTimerDialogState extends State<_InfusionTimerDialog> with SignalsMixin {
   late final _formKey = GlobalKey<FormState>();
   late final _autovalidateMode = createSignal<AutovalidateMode>(
     AutovalidateMode.disabled,
@@ -328,9 +316,7 @@ class _InfusionTimerDialogState extends State<_InfusionTimerDialog>
     return Watch((context) {
       return AlertDialog(
         scrollable: true,
-        title: _isNewTimer
-            ? const Text('New Infusion')
-            : Text('Edit Infusion :: ${widget.initialTimer!.title}'),
+        title: _isNewTimer ? const Text('New Infusion') : Text('Edit Infusion :: ${widget.initialTimer!.title}'),
         content: Form(
           key: _formKey,
           autovalidateMode: _autovalidateMode.value,
@@ -348,11 +334,9 @@ class _InfusionTimerDialogState extends State<_InfusionTimerDialog>
               TextFormField(
                 controller: _volumeController,
                 decoration: const InputDecoration(labelText: 'Volume (ml)'),
-                keyboardType:
-                    const TextInputType.numberWithOptions(decimal: true),
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 textInputAction: TextInputAction.next,
-                validator: (value) =>
-                    widget.positiveNumberValidator(value, 'volume'),
+                validator: (value) => widget.positiveNumberValidator(value, 'volume'),
               ),
               const Gap(8),
               TextFormField(
@@ -360,11 +344,9 @@ class _InfusionTimerDialogState extends State<_InfusionTimerDialog>
                 decoration: const InputDecoration(
                   labelText: 'Drop Factor (gtts/ml)',
                 ),
-                keyboardType:
-                    const TextInputType.numberWithOptions(decimal: true),
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 textInputAction: TextInputAction.next,
-                validator: (value) =>
-                    widget.positiveNumberValidator(value, 'drop factor'),
+                validator: (value) => widget.positiveNumberValidator(value, 'drop factor'),
               ),
               const Gap(8),
               TextFormField(
@@ -372,11 +354,9 @@ class _InfusionTimerDialogState extends State<_InfusionTimerDialog>
                 decoration: const InputDecoration(
                   labelText: 'Flow Rate (gtts/min)',
                 ),
-                keyboardType:
-                    const TextInputType.numberWithOptions(decimal: true),
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 textInputAction: TextInputAction.done,
-                validator: (value) =>
-                    widget.positiveNumberValidator(value, 'flow rate'),
+                validator: (value) => widget.positiveNumberValidator(value, 'flow rate'),
               ),
             ],
           ),

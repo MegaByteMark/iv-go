@@ -61,6 +61,9 @@ Based on review of `copilot-requirements.md` vs current codebase implementation 
 - [x] Implement baseline iOS local notification plumbing and manual verification
 - [x] Add scheduling-specific Android setup required for timed notifications
 - [ ] Add any additional iOS setup required for timed notifications beyond the current baseline flow
+- [ ] Add Windows notification initialization settings, runtime validation, and packaging notes for desktop workstation deployment
+- [ ] Add macOS notification initialization settings and runtime validation if macOS support is pursued
+- [ ] Keep Linux and web out of the delivered notification scope because scheduled local notifications are not reliable enough there
 
 ---
 
@@ -136,7 +139,9 @@ Based on review of `copilot-requirements.md` vs current codebase implementation 
 - [ ] Verify support for larger text sizes and layout resilience
 
 ### Scope And Platform Fit
-- [ ] Treat Android and iOS as the delivered product scope and avoid prioritizing unsupported desktop or web targets unless explicitly requested
+- [x] Remove the Flutter web target from the project so unsupported browser deployment is not advertised by the scaffold
+- [x] Treat Android, iOS, and Windows as the supported product scope, with macOS optional after notification validation
+- [x] Remove Linux scaffolding from the Flutter project so unsupported desktop deployment is not advertised by the scaffold
 
 ---
 
