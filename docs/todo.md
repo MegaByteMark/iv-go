@@ -56,6 +56,11 @@ Based on review of `copilot-requirements.md` vs current codebase implementation 
 ### Notification Permissions And Platform Work
 - [x] Request notification permissions at the appropriate point in the app flow
 - [ ] Handle denied or unavailable permissions clearly without blocking core timer use
+  - [ ] Replace the generic permission-request feedback with explicit denied-state guidance and the in-app monitoring fallback
+  - [ ] Decide whether denied notifications should offer a recovery path such as opening system settings or explicit re-enable instructions
+  - [ ] Add a widget test proving the denied-permission warning does not block creating a timer
+  - [ ] Add a widget test proving the denied-permission warning does not block core timer actions such as pause, resume, and remove
+  - [ ] Add a widget test proving the unavailable-permission warning does not block core timer use
 - [x] Show a persistent warning in the main timer list view while notification permissions remain denied
 - [x] Implement baseline Android local notification plumbing and manual verification
 - [x] Implement baseline iOS local notification plumbing and manual verification
@@ -63,7 +68,7 @@ Based on review of `copilot-requirements.md` vs current codebase implementation 
 - [ ] Add any additional iOS setup required for timed notifications beyond the current baseline flow
 - [ ] Add Windows notification initialization settings, runtime validation, and packaging notes for desktop workstation deployment
 - [ ] Add macOS notification initialization settings and runtime validation if macOS support is pursued
-- [ ] Keep Linux and web out of the delivered notification scope because scheduled local notifications are not reliable enough there
+- [x] Keep Linux and web out of the delivered notification scope because scheduled local notifications are not reliable enough there
 
 ---
 
@@ -157,6 +162,16 @@ Based on review of `copilot-requirements.md` vs current codebase implementation 
 - [ ] Reduce reliance on `late` and nullable timer fields where clearer defaults or explicit state would make behavior safer
 - [ ] Make persisted timer data structures easier to reason about and version if the model evolves
 - [ ] Keep flow-calculation rules documented close to the domain logic and covered by tests rather than comments alone
+
+---
+
+## Low Priority
+### UI Tweaks
+- [ ] Fix up app icon
+- [ ] Fix up app splash screen
+
+### DevOps
+- [ ] Implement basic CI/CD for this repository to validate quality of merges into develop and form the basis of good PR's.
 
 ---
 

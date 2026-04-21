@@ -8,7 +8,7 @@ class FakeNotificationClient implements NotificationClient {
   final List<ScheduledNotification> scheduledNotifications = <ScheduledNotification>[];
   final List<int> cancelledIds = <int>[];
   List<PendingNotificationRequest> pendingNotifications = <PendingNotificationRequest>[];
-  NotificationPermissionStatus permissionStatus = NotificationPermissionStatus.unknown;
+  NotificationPermissionStatus permissionStatus = NotificationPermissionStatus.notDetermined;
   bool permissionRequestResult = true;
   int getPermissionStatusCallCount = 0;
   int requestPermissionsCallCount = 0;
@@ -19,7 +19,7 @@ class FakeNotificationClient implements NotificationClient {
   }) async {
     getPermissionStatusCallCount += 1;
 
-    if (permissionStatus == NotificationPermissionStatus.unknown && hasRequestedPermission) {
+    if (permissionStatus == NotificationPermissionStatus.notDetermined && hasRequestedPermission) {
       return NotificationPermissionStatus.denied;
     }
 

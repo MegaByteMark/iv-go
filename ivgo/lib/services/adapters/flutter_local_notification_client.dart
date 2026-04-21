@@ -21,7 +21,7 @@ class FlutterLocalNotificationClient implements NotificationClient {
         return NotificationPermissionStatus.granted;
       }
 
-      return hasRequestedPermission ? NotificationPermissionStatus.denied : NotificationPermissionStatus.unknown;
+      return hasRequestedPermission ? NotificationPermissionStatus.denied : NotificationPermissionStatus.notDetermined;
     }
 
     final IOSFlutterLocalNotificationsPlugin? iosPlugin = _plugin.resolvePlatformSpecificImplementation<IOSFlutterLocalNotificationsPlugin>();
@@ -34,7 +34,7 @@ class FlutterLocalNotificationClient implements NotificationClient {
         return NotificationPermissionStatus.granted;
       }
 
-      return hasRequestedPermission ? NotificationPermissionStatus.denied : NotificationPermissionStatus.unknown;
+      return hasRequestedPermission ? NotificationPermissionStatus.denied : NotificationPermissionStatus.notDetermined;
     }
 
     final MacOSFlutterLocalNotificationsPlugin? macosPlugin = _plugin.resolvePlatformSpecificImplementation<MacOSFlutterLocalNotificationsPlugin>();
@@ -47,10 +47,10 @@ class FlutterLocalNotificationClient implements NotificationClient {
         return NotificationPermissionStatus.granted;
       }
 
-      return hasRequestedPermission ? NotificationPermissionStatus.denied : NotificationPermissionStatus.unknown;
+      return hasRequestedPermission ? NotificationPermissionStatus.denied : NotificationPermissionStatus.notDetermined;
     }
 
-    return NotificationPermissionStatus.unknown;
+    return NotificationPermissionStatus.unavailable;
   }
 
   @override

@@ -55,7 +55,7 @@ class NotificationService {
   final TargetPlatform _targetPlatform;
   final bool _isWeb;
   final _permissionStatus = signal(
-    NotificationPermissionStatus.unknown,
+    NotificationPermissionStatus.notDetermined,
     debugLabel: 'notificationPermissionStatus',
   );
 
@@ -101,7 +101,6 @@ class NotificationService {
       await refreshPermissionStatus();
     } catch (e) {
       debugPrint('Error checking notification permissions during initialization: $e');
-      setPermissionStatus(NotificationPermissionStatus.unknown);
     }
   }
 
@@ -128,7 +127,7 @@ class NotificationService {
     }
 
     if (!supportsNotificationPermissionRequest) {
-      setPermissionStatus(NotificationPermissionStatus.unknown);
+      setPermissionStatus(NotificationPermissionStatus.unavailable);
 
       return false;
     }

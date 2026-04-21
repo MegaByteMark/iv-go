@@ -338,4 +338,22 @@ void main() {
       findsOneWidget,
     );
   });
+
+  testWidgets('shows the permission warning banner for an existing unavailable state', (WidgetTester tester) async {
+    SharedPreferences.setMockInitialValues(<String, Object>{});
+
+    await pumpApp(
+      tester,
+      notificationService: FakeNotificationService(
+        initialPermissionStatus: NotificationPermissionStatus.unavailable,
+      ),
+    );
+
+    expect(
+      find.text(
+        'Notification permissions unavailable on this platform. Background alerts will not function. Please monitor timers in-app.',
+      ),
+      findsOneWidget,
+    );
+  });
 }

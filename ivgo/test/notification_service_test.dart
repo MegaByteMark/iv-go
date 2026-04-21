@@ -163,7 +163,7 @@ void main() {
       expect(fakeNotificationClient.cancelledIds, <int>[101, 102]);
     });
 
-    test('refreshPermissionStatus stays unknown before any permission prompt', () async {
+    test('refreshPermissionStatus stays notDetermined before any permission prompt', () async {
       final NotificationService service = NotificationService(
         nowProvider: () => now,
         notificationClient: fakeNotificationClient,
@@ -174,10 +174,10 @@ void main() {
 
       final NotificationPermissionStatus status = await service.refreshPermissionStatus();
 
-      expect(status, NotificationPermissionStatus.unknown);
+      expect(status, NotificationPermissionStatus.notDetermined);
       expect(
         service.permissionStatus.value,
-        NotificationPermissionStatus.unknown,
+        NotificationPermissionStatus.notDetermined,
       );
     });
 
@@ -193,7 +193,7 @@ void main() {
       );
 
       final bool granted = await service.requestPermissions();
-      fakeNotificationClient.permissionStatus = NotificationPermissionStatus.unknown;
+      fakeNotificationClient.permissionStatus = NotificationPermissionStatus.notDetermined;
 
       final NotificationPermissionStatus refreshedStatus = await service.refreshPermissionStatus();
 
@@ -220,6 +220,25 @@ void main() {
       expect(
         service.permissionStatus.value,
         NotificationPermissionStatus.granted,
+      );
+    });
+
+    test('requestPermissions updates status to unavailable when platform support is not available', () async {
+      final NotificationService service = NotificationService(
+        nowProvider: () => now,
+        notificationClient: fakeNotificationClient,
+        settingsRepository: _FakeNotificationSettingsRepository(
+          const <InfusionNotificationMilestone>[],
+        ),
+        targetPlatform: TargetPlatform.linux,
+      );
+
+      final bool granted = await service.requestPermissions();
+
+      expect(granted, isFalse);
+      expect(
+        service.permissionStatus.value,
+        NotificationPermissionStatus.unavailable,
       );
     });
 

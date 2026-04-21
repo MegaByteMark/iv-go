@@ -1,5 +1,6 @@
 enum NotificationPermissionStatus {
-  unknown,
+  notDetermined,
   granted,
   denied,
+  unavailable,
 }

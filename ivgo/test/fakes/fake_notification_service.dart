@@ -6,7 +6,7 @@ class FakeNotificationService extends NotificationService {
   FakeNotificationService({
     this.permissionResult = true,
     this.exactAlarmPermissionResult = true,
-    NotificationPermissionStatus initialPermissionStatus = NotificationPermissionStatus.unknown,
+    NotificationPermissionStatus initialPermissionStatus = NotificationPermissionStatus.notDetermined,
   }) {
     setPermissionStatus(initialPermissionStatus);
   }
