@@ -72,16 +72,6 @@ class _InfusionListPageState extends State<InfusionListPage> with WidgetsBinding
               tooltip: 'Enable Exact Alarms',
               onPressed: _requestExactAlarmPermission,
             ),
-          IconButton(
-            icon: const Icon(Icons.notification_add_outlined),
-            tooltip: 'Send Test Notification',
-            onPressed: _sendTestNotification,
-          ),
-          IconButton(
-            icon: const Icon(Icons.schedule_outlined),
-            tooltip: 'Send Test Scheduled Notification',
-            onPressed: _scheduleTestNotification,
-          ),
         ],
       ),
       body: Column(
@@ -147,20 +137,6 @@ class _InfusionListPageState extends State<InfusionListPage> with WidgetsBinding
     );
   }
 
-  Future<void> _sendTestNotification() async {
-    await widget.notificationService.showTestNotification();
-
-    if (!mounted) {
-      return;
-    }
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Test notification sent'),
-      ),
-    );
-  }
-
   Future<void> _requestNotificationPermissions() async {
     final bool granted = await widget.notificationService.requestPermissions();
 
@@ -178,10 +154,13 @@ class _InfusionListPageState extends State<InfusionListPage> with WidgetsBinding
   }
 
   Future<InfusionTimer?> _addOrEditTimer(InfusionTimer? theTimer) async {
-    final _InfusionTimerFormData? formData = await showDialog<_InfusionTimerFormData>(
+    final _InfusionTimerFormData? formData = await showModalBottomSheet<_InfusionTimerFormData>(
       context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      showDragHandle: true,
       builder: (BuildContext context) {
-        return _InfusionTimerDialog(
+        return _InfusionTimerSheet(
           initialTimer: theTimer,
           titleValidator: _validateTitle,
           positiveNumberValidator: _validatePositiveNumber,
@@ -235,20 +214,6 @@ class _InfusionListPageState extends State<InfusionListPage> with WidgetsBinding
     return null;
   }
 
-  Future<void> _scheduleTestNotification() async {
-    await widget.notificationService.scheduleTestNotification();
-
-    if (!mounted) {
-      return;
-    }
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Test scheduled notification set for 10 seconds from now'),
-      ),
-    );
-  }
-
   Future<void> _requestExactAlarmPermission() async {
     final bool granted = await widget.notificationService.requestExactAlarmPermission();
 
@@ -266,8 +231,8 @@ class _InfusionListPageState extends State<InfusionListPage> with WidgetsBinding
   }
 }
 
-class _InfusionTimerDialog extends StatefulWidget {
-  const _InfusionTimerDialog({
+class _InfusionTimerSheet extends StatefulWidget {
+  const _InfusionTimerSheet({
     required this.initialTimer,
     required this.titleValidator,
     required this.positiveNumberValidator,
@@ -278,14 +243,14 @@ class _InfusionTimerDialog extends StatefulWidget {
   final String? Function(String? value, String fieldName) positiveNumberValidator;
 
   @override
-  State<_InfusionTimerDialog> createState() => _InfusionTimerDialogState();
+  State<_InfusionTimerSheet> createState() => _InfusionTimerSheetState();
 }
 
-class _InfusionTimerDialogState extends State<_InfusionTimerDialog> with SignalsMixin {
+class _InfusionTimerSheetState extends State<_InfusionTimerSheet> with SignalsMixin {
   late final _formKey = GlobalKey<FormState>();
   late final _autovalidateMode = createSignal<AutovalidateMode>(
     AutovalidateMode.disabled,
-    debugLabel: 'infusionTimerDialogAutovalidateMode',
+    debugLabel: 'infusionTimerSheetAutovalidateMode',
   );
   late final _titleController = TextEditingController(
     text: widget.initialTimer?.title ?? '',
@@ -314,65 +279,88 @@ class _InfusionTimerDialogState extends State<_InfusionTimerDialog> with Signals
   @override
   Widget build(BuildContext context) {
     return Watch((context) {
-      return AlertDialog(
-        scrollable: true,
-        title: _isNewTimer ? const Text('New Infusion') : Text('Edit Infusion :: ${widget.initialTimer!.title}'),
-        content: Form(
-          key: _formKey,
-          autovalidateMode: _autovalidateMode.value,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              TextFormField(
-                controller: _titleController,
-                decoration: const InputDecoration(labelText: 'Title'),
-                autofocus: true,
-                textInputAction: TextInputAction.next,
-                validator: widget.titleValidator,
-              ),
-              const Gap(8),
-              TextFormField(
-                controller: _volumeController,
-                decoration: const InputDecoration(labelText: 'Volume (ml)'),
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                textInputAction: TextInputAction.next,
-                validator: (value) => widget.positiveNumberValidator(value, 'volume'),
-              ),
-              const Gap(8),
-              TextFormField(
-                controller: _dropFactorController,
-                decoration: const InputDecoration(
-                  labelText: 'Drop Factor (gtts/ml)',
+      final MediaQueryData mediaQuery = MediaQuery.of(context);
+
+      return SafeArea(
+        top: false,
+        child: AnimatedPadding(
+          duration: const Duration(milliseconds: 150),
+          curve: Curves.easeOut,
+          padding: EdgeInsets.only(bottom: mediaQuery.viewInsets.bottom),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            child: SingleChildScrollView(
+              child: Form(
+                key: _formKey,
+                autovalidateMode: _autovalidateMode.value,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: <Widget>[
+                    Text(
+                      _isNewTimer ? 'New Infusion' : 'Edit Infusion :: ${widget.initialTimer!.title}',
+                      style: Theme.of(context).textTheme.headlineSmall,
+                    ),
+                    const Gap(16),
+                    TextFormField(
+                      controller: _titleController,
+                      decoration: const InputDecoration(labelText: 'Title'),
+                      autofocus: true,
+                      textInputAction: TextInputAction.next,
+                      validator: widget.titleValidator,
+                    ),
+                    const Gap(8),
+                    TextFormField(
+                      controller: _volumeController,
+                      decoration: const InputDecoration(labelText: 'Volume (ml)'),
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      textInputAction: TextInputAction.next,
+                      validator: (value) => widget.positiveNumberValidator(value, 'volume'),
+                    ),
+                    const Gap(8),
+                    TextFormField(
+                      controller: _dropFactorController,
+                      decoration: const InputDecoration(
+                        labelText: 'Drop Factor (gtts/ml)',
+                      ),
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      textInputAction: TextInputAction.next,
+                      validator: (value) => widget.positiveNumberValidator(value, 'drop factor'),
+                    ),
+                    const Gap(8),
+                    TextFormField(
+                      controller: _flowRateController,
+                      decoration: const InputDecoration(
+                        labelText: 'Flow Rate (gtts/min)',
+                      ),
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      textInputAction: TextInputAction.done,
+                      onFieldSubmitted: (_) => _submit(),
+                      validator: (value) => widget.positiveNumberValidator(value, 'flow rate'),
+                    ),
+                    const Gap(16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: <Widget>[
+                        TextButton(
+                          onPressed: () {
+                            Navigator.of(context).pop();
+                          },
+                          child: const Text('Cancel'),
+                        ),
+                        const Gap(8),
+                        FilledButton(
+                          onPressed: _submit,
+                          child: Text(_isNewTimer ? 'Add' : 'Save'),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                textInputAction: TextInputAction.next,
-                validator: (value) => widget.positiveNumberValidator(value, 'drop factor'),
               ),
-              const Gap(8),
-              TextFormField(
-                controller: _flowRateController,
-                decoration: const InputDecoration(
-                  labelText: 'Flow Rate (gtts/min)',
-                ),
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                textInputAction: TextInputAction.done,
-                validator: (value) => widget.positiveNumberValidator(value, 'flow rate'),
-              ),
-            ],
+            ),
           ),
         ),
-        actions: <Widget>[
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-            },
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: _submit,
-            child: Text(_isNewTimer ? 'Add' : 'Save'),
-          ),
-        ],
       );
     });
   }

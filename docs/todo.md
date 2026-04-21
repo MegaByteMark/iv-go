@@ -38,25 +38,25 @@ Based on review of `copilot-requirements.md` vs current codebase implementation 
 - [x] Add a temporary app-bar action to fire an immediate local test notification and verify end-to-end delivery
 - [x] Add explicit scheduled-notification support using timezone-aware scheduling
 - [x] Add a temporary scheduled test notification to prove delayed delivery before wiring milestone logic
-- [ ] Remove temporary notification test UI once milestone notifications are implemented
-- [ ] Implement the first real timer milestone notification using the current notification service
+- [x] Remove temporary notification test UI once milestone notifications are implemented
+- [x] Implement the first real timer milestone notification using the current notification service
 
 ### Required Notifications
-- [ ] Implement last 10 minutes milestone notification
-- [ ] Implement last 1 minute milestone notification
-- [ ] Implement "ended and stopped for more than 10 minutes" notification that fires once per timer lifecycle
-- [ ] Track which milestone notifications have already fired for the current timer lifecycle
-- [ ] If a timer resumes or restores inside a milestone window, issue the milestone notification unless it already fired in that lifecycle
+- [x] Implement last 10 minutes milestone notification
+- [x] Implement last 1 minute milestone notification
+- [x] Implement "ended and stopped for more than 10 minutes" notification that fires once per timer lifecycle
+- [x] Track which milestone notifications have already fired for the current timer lifecycle
+- [x] If a timer resumes or restores inside a milestone window, issue the milestone notification unless it already fired in that lifecycle
 
 ### Notification Cancellation And Recovery
-- [ ] Cancel or clear notifications when the user pauses, edits, resets, or removes a timer
-- [ ] Ensure duplicate notifications are prevented within a single timer lifecycle
-- [ ] Define and implement notification behavior for timers recovered as already ended after app relaunch
+- [x] Cancel or clear notifications when the user pauses, edits, resets, or removes a timer
+- [x] Ensure duplicate notifications are prevented within a single timer lifecycle
+- [x] Define and implement notification behavior for timers recovered as already ended after app relaunch
 
 ### Notification Permissions And Platform Work
 - [x] Request notification permissions at the appropriate point in the app flow
 - [ ] Handle denied or unavailable permissions clearly without blocking core timer use
-- [ ] Show a persistent warning in the main timer list view while notification permissions remain denied
+- [x] Show a persistent warning in the main timer list view while notification permissions remain denied
 - [x] Implement baseline Android local notification plumbing and manual verification
 - [x] Implement baseline iOS local notification plumbing and manual verification
 - [x] Add scheduling-specific Android setup required for timed notifications
@@ -77,7 +77,7 @@ Based on review of `copilot-requirements.md` vs current codebase implementation 
 
 ### Safety Warnings
 - [ ] If notifications are denied or unavailable, clearly warn that background alerting will not function and timers must be monitored in-app
-- [ ] Keep that warning persistently visible in the main timer list until permissions are enabled
+- [x] Keep that warning persistently visible in the main timer list until permissions are enabled
 
 ---
 
@@ -91,6 +91,7 @@ Based on review of `copilot-requirements.md` vs current codebase implementation 
 
 ### Form Behavior
 - [x] Decide whether timer title is required and enforce that decision consistently in the form
+- [x] Use a modal bottom-sheet overlay for the add/edit infusion form instead of a centered dialog
 - [ ] Improve data-entry UX for mobile numeric input and validation feedback
 
 ---
@@ -165,7 +166,7 @@ Based on review of `copilot-requirements.md` vs current codebase implementation 
 |----------|--------|----------|
 | Timer lifecycle and restore | Core lifecycle, recovered-overdue highlighting, and acknowledgement flow implemented | Critical |
 | Persistence reliability | Core persistence and restore flow implemented; notification-related recovery still pending | Critical |
-| Notifications | Permission flow plus immediate and scheduled Android local notification plumbing implemented; milestone logic still pending | Critical |
+| Notifications | Permission flow, milestone scheduling, lifecycle-aware cancellation, and recovered-timer handling implemented; cleanup and platform validation still pending | Critical |
 | Disclaimer and safety warnings | Not implemented | Critical |
 | Validation | Basic create/edit validation implemented; mobile UX polish still pending | High |
 | Testing | Core timer and validation coverage added; broader UI coverage still pending | High |
@@ -174,4 +175,4 @@ Based on review of `copilot-requirements.md` vs current codebase implementation 
 
 ---
 
-*Updated after code review and follow-up implementation work on timer lifecycle, persistence, restore, and validation.*
+*Updated after code review and follow-up implementation work on timer lifecycle, persistence, restore, notification milestones, and the bottom-sheet form flow.*

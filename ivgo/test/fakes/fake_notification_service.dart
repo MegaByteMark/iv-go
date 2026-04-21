@@ -15,8 +15,6 @@ class FakeNotificationService extends NotificationService {
   final bool exactAlarmPermissionResult;
   int scheduledMilestoneCalls = 0;
   int cancelledMilestoneCalls = 0;
-  int shownTestNotificationCalls = 0;
-  int scheduledTestNotificationCalls = 0;
   final List<int> scheduledTimerIds = <int>[];
   final List<int> cancelledTimerIds = <int>[];
 
@@ -33,16 +31,6 @@ class FakeNotificationService extends NotificationService {
 
   @override
   Future<bool> requestExactAlarmPermission() async => exactAlarmPermissionResult;
-
-  @override
-  Future<void> showTestNotification() async {
-    shownTestNotificationCalls += 1;
-  }
-
-  @override
-  Future<void> scheduleTestNotification() async {
-    scheduledTestNotificationCalls += 1;
-  }
 
   @override
   Future<void> scheduleMilestonesForTimer(InfusionTimer timer) async {

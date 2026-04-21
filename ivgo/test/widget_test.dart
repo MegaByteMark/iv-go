@@ -35,7 +35,7 @@ void main() {
     await tester.enterText(find.byType(TextFormField).at(2), dropFactor);
     await tester.enterText(find.byType(TextFormField).at(3), flowRate);
 
-    await tester.tap(find.widgetWithText(TextButton, 'Add'));
+    await tester.tap(find.widgetWithText(FilledButton, 'Add'));
     await tester.pumpAndSettle();
   }
 
@@ -56,7 +56,9 @@ void main() {
     await tester.tap(find.byTooltip('Add New Infusion'));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.widgetWithText(TextButton, 'Add'));
+    expect(find.byType(BottomSheet), findsOneWidget);
+
+    await tester.tap(find.widgetWithText(FilledButton, 'Add'));
     await tester.pumpAndSettle();
 
     expect(find.text('Enter a title'), findsOneWidget);
@@ -79,7 +81,7 @@ void main() {
     await tester.enterText(find.byType(TextFormField).at(2), '-5');
     await tester.enterText(find.byType(TextFormField).at(3), '0');
 
-    await tester.tap(find.widgetWithText(TextButton, 'Add'));
+    await tester.tap(find.widgetWithText(FilledButton, 'Add'));
     await tester.pumpAndSettle();
 
     expect(find.text('volume must be a number'), findsOneWidget);
@@ -201,7 +203,7 @@ void main() {
     await tester.enterText(find.byType(TextFormField).at(0), '');
     await tester.enterText(find.byType(TextFormField).at(1), '0');
 
-    await tester.tap(find.widgetWithText(TextButton, 'Save'));
+    await tester.tap(find.widgetWithText(FilledButton, 'Save'));
     await tester.pumpAndSettle();
 
     expect(find.text('Enter a title'), findsOneWidget);
