@@ -38,29 +38,25 @@ class InfusionNotificationSettingsRepository {
   final Future<SharedPreferences> Function() _sharedPreferencesFactory;
 
   Future<List<InfusionNotificationMilestone>> loadMilestones() async {
-    final SharedPreferences prefs = await _sharedPreferencesFactory();
-    final List<String>? milestonesJson = prefs.getStringList(_storageKey);
-
-    if (milestonesJson == null) {
-      return List<InfusionNotificationMilestone>.of(_defaultMilestones);
-    }
-
     try {
-      return milestonesJson
-          .map(
-            (String json) {
-              final decoded = jsonDecode(json);
+      final SharedPreferences prefs = await _sharedPreferencesFactory();
+      final List<String>? milestonesJson = prefs.getStringList(_storageKey);
 
-              if(decoded is! Map<String, dynamic>) {
-                throw FormatException('Invalid JSON format for InfusionNotificationMilestone');
-              }
+      if (milestonesJson == null) {
+        return List<InfusionNotificationMilestone>.of(_defaultMilestones);
+      }
 
-              return InfusionNotificationMilestone.fromJson(decoded);
-            }
-          )
-          .toList();
+      return milestonesJson.map((String json) {
+        final decoded = jsonDecode(json);
+
+        if (decoded is! Map<String, dynamic>) {
+          throw FormatException('Invalid JSON format for InfusionNotificationMilestone');
+        }
+
+        return InfusionNotificationMilestone.fromJson(decoded);
+      }).toList();
     } catch (_) {
-      // If parsing fails, return default milestones
+      // If storage access or parsing fails, return default milestones.
       return List<InfusionNotificationMilestone>.of(_defaultMilestones);
     }
   }

@@ -142,6 +142,115 @@ void main() {
       expect(fakeNotificationClient.scheduledNotifications.single.body, 'Saline is nearly complete.');
     });
 
+    test('uses time-sensitive iOS details for milestone notifications', () async {
+      final InfusionNotificationMilestone milestone = createMilestone(
+        key: 'one_minute_remaining',
+        title: '1 minute remaining',
+        body: '{timer_title} is nearly complete.',
+        offset: const Duration(minutes: 1),
+        trigger: InfusionNotificationTrigger.beforeEnd,
+      );
+
+      final NotificationService service = NotificationService(
+        nowProvider: () => now,
+        notificationClient: fakeNotificationClient,
+        settingsRepository: _FakeNotificationSettingsRepository(
+          <InfusionNotificationMilestone>[milestone],
+        ),
+      );
+
+      final InfusionTimer timer = createTimer(volume: 6);
+
+      timer.start();
+
+      await service.scheduleMilestonesForTimer(timer);
+
+      final DarwinNotificationDetails? iosDetails = fakeNotificationClient.scheduledNotifications.single.notificationDetails.iOS;
+
+      expect(iosDetails, isNotNull);
+      expect(iosDetails?.interruptionLevel, InterruptionLevel.timeSensitive);
+      expect(iosDetails?.presentBanner, isTrue);
+      expect(iosDetails?.presentList, isTrue);
+      expect(iosDetails?.presentSound, isTrue);
+    });
+
+    test('uses urgent Windows details for milestone notifications', () async {
+      final InfusionNotificationMilestone milestone = createMilestone(
+        key: 'one_minute_remaining',
+        title: '1 minute remaining',
+        body: '{timer_title} is nearly complete.',
+        offset: const Duration(minutes: 1),
+        trigger: InfusionNotificationTrigger.beforeEnd,
+      );
+      final NotificationService service = NotificationService(
+        nowProvider: () => now,
+        notificationClient: fakeNotificationClient,
+        settingsRepository: _FakeNotificationSettingsRepository(
+          <InfusionNotificationMilestone>[milestone],
+        ),
+      );
+      final InfusionTimer timer = createTimer(volume: 6);
+
+      timer.start();
+
+      await service.scheduleMilestonesForTimer(timer);
+
+      final WindowsNotificationDetails? windowsDetails = fakeNotificationClient.scheduledNotifications.single.notificationDetails.windows;
+
+      expect(windowsDetails, isNotNull);
+      expect(windowsDetails?.duration, WindowsNotificationDuration.long);
+      expect(windowsDetails?.scenario, WindowsNotificationScenario.urgent);
+    });
+
+    test('uses foreground-presenting macOS details for milestone notifications', () async {
+      final InfusionNotificationMilestone milestone = createMilestone(
+        key: 'one_minute_remaining',
+        title: '1 minute remaining',
+        body: '{timer_title} is nearly complete.',
+        offset: const Duration(minutes: 1),
+        trigger: InfusionNotificationTrigger.beforeEnd,
+      );
+      final NotificationService service = NotificationService(
+        nowProvider: () => now,
+        notificationClient: fakeNotificationClient,
+        settingsRepository: _FakeNotificationSettingsRepository(
+          <InfusionNotificationMilestone>[milestone],
+        ),
+      );
+      final InfusionTimer timer = createTimer(volume: 6);
+
+      timer.start();
+
+      await service.scheduleMilestonesForTimer(timer);
+
+      final DarwinNotificationDetails? macosDetails = fakeNotificationClient.scheduledNotifications.single.notificationDetails.macOS;
+
+      expect(macosDetails, isNotNull);
+      expect(macosDetails?.presentAlert, isTrue);
+      expect(macosDetails?.presentBadge, isTrue);
+      expect(macosDetails?.presentSound, isTrue);
+      expect(macosDetails?.presentBanner, isTrue);
+      expect(macosDetails?.presentList, isTrue);
+      expect(macosDetails?.interruptionLevel, isNull);
+    });
+
+    test('requestPermissions uses the macOS notification client flow', () async {
+      final NotificationService service = NotificationService(
+        nowProvider: () => now,
+        notificationClient: fakeNotificationClient,
+        settingsRepository: _FakeNotificationSettingsRepository(
+          const <InfusionNotificationMilestone>[],
+        ),
+        targetPlatform: TargetPlatform.macOS,
+      );
+
+      final bool granted = await service.requestPermissions();
+
+      expect(granted, isTrue);
+      expect(service.permissionStatus.value, NotificationPermissionStatus.granted);
+      expect(fakeNotificationClient.requestPermissionsCallCount, 1);
+    });
+
     test('cancels only pending notifications for the specified timer id', () async {
       final NotificationService service = NotificationService(
         nowProvider: () => now,

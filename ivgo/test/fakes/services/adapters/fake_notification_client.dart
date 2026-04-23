@@ -51,7 +51,13 @@ class FakeNotificationClient implements NotificationClient {
     required NotificationDetails notificationDetails,
     String? payload,
   }) async {
-    shownNotifications.add(ShownNotification(title: title, body: body));
+    shownNotifications.add(
+      ShownNotification(
+        title: title,
+        body: body,
+        notificationDetails: notificationDetails,
+      ),
+    );
   }
 
   @override
@@ -70,6 +76,7 @@ class FakeNotificationClient implements NotificationClient {
         title: title,
         body: body,
         scheduledDate: scheduledDate,
+        notificationDetails: notificationDetails,
         payload: payload,
       ),
     );
@@ -77,10 +84,15 @@ class FakeNotificationClient implements NotificationClient {
 }
 
 class ShownNotification {
-  const ShownNotification({required this.title, required this.body});
+  const ShownNotification({
+    required this.title,
+    required this.body,
+    required this.notificationDetails,
+  });
 
   final String? title;
   final String? body;
+  final NotificationDetails notificationDetails;
 }
 
 class ScheduledNotification {
@@ -89,6 +101,7 @@ class ScheduledNotification {
     required this.title,
     required this.body,
     required this.scheduledDate,
+    required this.notificationDetails,
     required this.payload,
   });
 
@@ -96,5 +109,6 @@ class ScheduledNotification {
   final String? title;
   final String? body;
   final tz.TZDateTime scheduledDate;
+  final NotificationDetails notificationDetails;
   final String? payload;
 }

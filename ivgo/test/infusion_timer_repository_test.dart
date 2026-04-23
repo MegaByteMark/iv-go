@@ -20,6 +20,29 @@ void main() {
       expect(timers, isEmpty);
     });
 
+    test('returns an empty list when shared preferences loading fails', () async {
+      repository = InfusionTimerRepository(
+        sharedPreferencesFactory: () async {
+          throw Exception('Shared preferences unavailable');
+        },
+      );
+
+      final List<InfusionTimer> timers = await repository.loadTimers();
+
+      expect(timers, isEmpty);
+    });
+
+    test('returns an empty list when stored timer JSON is invalid', () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{
+        'infusionTimers': <String>['not valid json'],
+      });
+      repository = InfusionTimerRepository();
+
+      final List<InfusionTimer> timers = await repository.loadTimers();
+
+      expect(timers, isEmpty);
+    });
+
     test('saves and restores timers through shared preferences', () async {
       final InfusionTimer timer = InfusionTimer(
         1,

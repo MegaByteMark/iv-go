@@ -55,19 +55,26 @@ Based on review of `copilot-requirements.md` vs current codebase implementation 
 
 ### Notification Permissions And Platform Work
 - [x] Request notification permissions at the appropriate point in the app flow
-- [ ] Handle denied or unavailable permissions clearly without blocking core timer use
-  - [ ] Replace the generic permission-request feedback with explicit denied-state guidance and the in-app monitoring fallback
-  - [ ] Decide whether denied notifications should offer a recovery path such as opening system settings or explicit re-enable instructions
-  - [ ] Add a widget test proving the denied-permission warning does not block creating a timer
-  - [ ] Add a widget test proving the denied-permission warning does not block core timer actions such as pause, resume, and remove
-  - [ ] Add a widget test proving the unavailable-permission warning does not block core timer use
+- [x] Handle denied or unavailable permissions clearly without blocking core timer use
+  - [x] Replace the generic permission-request feedback with explicit denied-state guidance and the in-app monitoring fallback
+  - [x] Decide whether denied notifications should offer a recovery path such as opening system settings or explicit re-enable instructions
+  - [x] Add a widget test proving the denied-permission warning does not block creating a timer
+  - [x] Add a widget test proving the denied-permission warning does not block core timer actions such as pause, resume, and remove
+  - [x] Add a widget test proving the unavailable-permission warning does not block core timer use
 - [x] Show a persistent warning in the main timer list view while notification permissions remain denied
 - [x] Implement baseline Android local notification plumbing and manual verification
 - [x] Implement baseline iOS local notification plumbing and manual verification
 - [x] Add scheduling-specific Android setup required for timed notifications
-- [ ] Add any additional iOS setup required for timed notifications beyond the current baseline flow
-- [ ] Add Windows notification initialization settings, runtime validation, and packaging notes for desktop workstation deployment
-- [ ] Add macOS notification initialization settings and runtime validation if macOS support is pursued
+- [x] Add any additional iOS setup required for timed notifications beyond the current baseline flow
+  - [x] Assign the iOS notification-center delegate so scheduled alerts can still present correctly while the app is in the foreground
+  - [x] Enable the Time Sensitive Notifications capability and mark milestone alerts as time-sensitive on iOS
+- [x] Add Windows notification initialization settings, runtime validation, and packaging notes for desktop workstation deployment
+  - [x] Keep stable Windows notification identity settings for the packaged app name, App User Model ID, and GUID
+  - [x] Mark Windows milestone toasts as urgent and document the MSIX packaging requirement for lifecycle-correct notification behaviour
+  - [x] Add a packaged-build runtime validation checklist for Windows workstation deployment
+- [x] Add macOS notification initialization settings and runtime validation if macOS support is pursued
+  - [x] Make the macOS notification initialization settings explicit in the notification service rather than relying on shared Darwin defaults implicitly
+  - [x] Document the macOS runtime validation checklist and rollout caveats for supported desktop builds
 - [x] Keep Linux and web out of the delivered notification scope because scheduled local notifications are not reliable enough there
 
 ---
@@ -75,10 +82,10 @@ Based on review of `copilot-requirements.md` vs current codebase implementation 
 ## Critical: Safety Positioning And Onboarding
 
 ### Disclaimer
-- [ ] Add first-launch onboarding or disclaimer flow explaining that the app is a job aid and not an automated infusion controller
-- [ ] Make clear that the user remains responsible for clinical decisions, equipment checks, and active monitoring
-- [ ] Record disclaimer acceptance locally
-- [ ] Do not show the disclaimer again unless app data is cleared
+- [x] Add first-launch onboarding or disclaimer flow explaining that the app is a job aid and not an automated infusion controller
+- [x] Make clear that the user remains responsible for clinical decisions, equipment checks, and active monitoring
+- [x] Record disclaimer acceptance locally
+- [x] Do not show the disclaimer again unless app data is cleared
 
 ### Safety Warnings
 - [ ] If notifications are denied or unavailable, clearly warn that background alerting will not function and timers must be monitored in-app

@@ -345,27 +345,69 @@ class NotificationService {
   }
 
   NotificationDetails _milestoneNotificationDetails() {
+    const DarwinNotificationDetails iosNotificationDetails = DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: true,
+      presentBanner: true,
+      presentList: true,
+      interruptionLevel: InterruptionLevel.timeSensitive,
+    );
+
+    const DarwinNotificationDetails macosNotificationDetails = DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: true,
+      presentBanner: true,
+      presentList: true,
+    );
+
+    const WindowsNotificationDetails windowsNotificationDetails = WindowsNotificationDetails(
+      duration: WindowsNotificationDuration.long,
+      scenario: WindowsNotificationScenario.urgent,
+    );
+
+    const AndroidNotificationDetails androidNotificationDetails = AndroidNotificationDetails(
+      _milestoneChannelId,
+      _milestoneChannelName,
+      channelDescription: _milestoneChannelDescription,
+      importance: Importance.max,
+      priority: Priority.high,
+    );
+
     return const NotificationDetails(
-      android: AndroidNotificationDetails(
-        _milestoneChannelId,
-        _milestoneChannelName,
-        channelDescription: _milestoneChannelDescription,
-        importance: Importance.max,
-        priority: Priority.high,
-      ),
-      iOS: DarwinNotificationDetails(),
-      macOS: DarwinNotificationDetails(),
-      windows: WindowsNotificationDetails(),
+      android: androidNotificationDetails,
+      iOS: iosNotificationDetails,
+      macOS: macosNotificationDetails,
+      windows: windowsNotificationDetails,
     );
   }
 
   InitializationSettings _initializationSettings() {
     const AndroidInitializationSettings androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
-    const DarwinInitializationSettings darwinSettings = DarwinInitializationSettings(
+
+    const DarwinInitializationSettings iosSettings = DarwinInitializationSettings(
       requestAlertPermission: false,
       requestBadgePermission: false,
       requestSoundPermission: false,
+      defaultPresentAlert: true,
+      defaultPresentBadge: true,
+      defaultPresentSound: true,
+      defaultPresentBanner: true,
+      defaultPresentList: true,
     );
+
+    const DarwinInitializationSettings macosSettings = DarwinInitializationSettings(
+      requestAlertPermission: false,
+      requestBadgePermission: false,
+      requestSoundPermission: false,
+      defaultPresentAlert: true,
+      defaultPresentBadge: true,
+      defaultPresentSound: true,
+      defaultPresentBanner: true,
+      defaultPresentList: true,
+    );
+    
     const WindowsInitializationSettings windowsSettings = WindowsInitializationSettings(
       appName: 'IVGo',
       appUserModelId: _windowsAppUserModelId,
@@ -374,8 +416,8 @@ class NotificationService {
 
     return const InitializationSettings(
       android: androidSettings,
-      iOS: darwinSettings,
-      macOS: darwinSettings,
+      iOS: iosSettings,
+      macOS: macosSettings,
       windows: windowsSettings,
     );
   }

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -5,20 +6,146 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ivgo/domain/infusion_characteristics.dart';
 import 'package:ivgo/domain/infusion_timer.dart';
 import 'package:ivgo/main.dart';
+import 'package:ivgo/repositories/disclaimer_acceptance_repository.dart';
 import 'package:ivgo/services/notification_permission_status.dart';
 import 'package:ivgo/services/notification_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'fakes/fake_disclaimer_acceptance_repository.dart';
 import 'fakes/fake_notification_service.dart';
 
+const String deniedPermissionWarning =
+    'Notifications are turned off. Background alerts will not function. Re-enable notifications in system settings and monitor timers in-app until alerts are restored.';
+const String unavailablePermissionWarning = 'Notifications are unavailable on this device or platform. Background alerts will not function. Monitor timers in-app.';
+const String disclaimerTitle = 'Before you begin';
+const String disclaimerAcknowledgement =
+    'I understand that IVGo is a job aid and not an automated infusion controller, and that I remain responsible for clinical decisions, equipment checks, and active monitoring.';
+
+class ThrowingDisclaimerAcceptanceRepository extends DisclaimerAcceptanceRepository {
+  @override
+  Future<bool> hasAcceptedDisclaimer() async {
+    throw Exception('Failed to load disclaimer acceptance');
+  }
+}
+
+class NeverCompletingDisclaimerAcceptanceRepository extends DisclaimerAcceptanceRepository {
+  @override
+  Future<bool> hasAcceptedDisclaimer() {
+    return Completer<bool>().future;
+  }
+}
+
 void main() {
-  Future<void> pumpApp(WidgetTester tester, {NotificationService? notificationService}) async {
+  Future<void> pumpApp(
+    WidgetTester tester, {
+    NotificationService? notificationService,
+    DisclaimerAcceptanceRepository? disclaimerAcceptanceRepository,
+    bool settle = true,
+  }) async {
     await tester.pumpWidget(
-      IVGoApp(notificationService: notificationService ?? FakeNotificationService()),
+      IVGoApp(
+        notificationService: notificationService ?? FakeNotificationService(),
+        disclaimerAcceptanceRepository: disclaimerAcceptanceRepository ?? FakeDisclaimerAcceptanceRepository(initialAccepted: true),
+      ),
     );
 
+    if (settle) {
+      await tester.pumpAndSettle();
+    } else {
+      await tester.pump();
+    }
+  }
+
+  Future<void> acceptDisclaimer(WidgetTester tester) async {
+    await tester.tap(find.byType(CheckboxListTile));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.widgetWithText(FilledButton, 'Accept and continue'));
     await tester.pumpAndSettle();
   }
+
+  testWidgets('shows the disclaimer on first launch and records acceptance', (
+    WidgetTester tester,
+  ) async {
+    SharedPreferences.setMockInitialValues(<String, Object>{});
+    final DisclaimerAcceptanceRepository disclaimerAcceptanceRepository = DisclaimerAcceptanceRepository();
+
+    await pumpApp(
+      tester,
+      disclaimerAcceptanceRepository: disclaimerAcceptanceRepository,
+    );
+
+    expect(find.text(disclaimerTitle), findsOneWidget);
+    expect(
+      find.text(
+        'IVGo is a job aid for tracking infusion progress when automated systems are unavailable or unsuitable. It does not control infusion delivery.',
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.textContaining('You remain responsible for clinical decisions'),
+      findsOneWidget,
+    );
+    expect(find.text(disclaimerAcknowledgement), findsOneWidget);
+    expect(find.text('No active infusions'), findsNothing);
+
+    final FilledButton buttonBeforeConfirmation = tester.widget<FilledButton>(
+      find.widgetWithText(FilledButton, 'Accept and continue'),
+    );
+    expect(buttonBeforeConfirmation.onPressed, isNull);
+
+    await acceptDisclaimer(tester);
+
+    expect(find.text(disclaimerTitle), findsNothing);
+    expect(find.text('No active infusions'), findsOneWidget);
+
+    expect(
+      await disclaimerAcceptanceRepository.hasAcceptedDisclaimer(),
+      isTrue,
+    );
+  });
+
+  testWidgets('skips the disclaimer once it has been accepted', (
+    WidgetTester tester,
+  ) async {
+    await pumpApp(
+      tester,
+      disclaimerAcceptanceRepository: FakeDisclaimerAcceptanceRepository(initialAccepted: true),
+    );
+
+    expect(find.text(disclaimerTitle), findsNothing);
+    expect(find.text('No active infusions'), findsOneWidget);
+  });
+
+  testWidgets('shows the disclaimer if loading acceptance fails', (
+    WidgetTester tester,
+  ) async {
+    await pumpApp(
+      tester,
+      disclaimerAcceptanceRepository: ThrowingDisclaimerAcceptanceRepository(),
+    );
+
+    expect(find.text(disclaimerTitle), findsOneWidget);
+    expect(find.text('No active infusions'), findsNothing);
+  });
+
+  testWidgets('shows the disclaimer if loading acceptance stalls', (
+    WidgetTester tester,
+  ) async {
+    await pumpApp(
+      tester,
+      disclaimerAcceptanceRepository: NeverCompletingDisclaimerAcceptanceRepository(),
+      settle: false,
+    );
+
+    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+
+    await tester.pump(const Duration(seconds: 4));
+    await tester.pumpAndSettle();
+
+    expect(find.text(disclaimerTitle), findsOneWidget);
+    expect(find.text('No active infusions'), findsNothing);
+  });
 
   Future<void> addTimer(
     WidgetTester tester, {
@@ -49,7 +176,9 @@ void main() {
   });
 
   testWidgets('rejects an empty timer form', (WidgetTester tester) async {
-    SharedPreferences.setMockInitialValues(<String, Object>{});
+    SharedPreferences.setMockInitialValues(<String, Object>{
+      'hasAcceptedDisclaimer': true,
+    });
 
     await pumpApp(tester);
 
@@ -69,7 +198,9 @@ void main() {
   });
 
   testWidgets('rejects invalid numeric values when adding a timer', (WidgetTester tester) async {
-    SharedPreferences.setMockInitialValues(<String, Object>{});
+    SharedPreferences.setMockInitialValues(<String, Object>{
+      'hasAcceptedDisclaimer': true,
+    });
 
     await pumpApp(tester);
 
@@ -98,6 +229,7 @@ void main() {
     );
 
     SharedPreferences.setMockInitialValues(<String, Object>{
+      'hasAcceptedDisclaimer': true,
       'infusionTimers': <String>[jsonEncode(timer.toJson())],
     });
 
@@ -129,6 +261,7 @@ void main() {
     };
 
     SharedPreferences.setMockInitialValues(<String, Object>{
+      'hasAcceptedDisclaimer': true,
       'infusionTimers': <String>[jsonEncode(recoveredTimerJson)],
     });
 
@@ -164,6 +297,7 @@ void main() {
     };
 
     SharedPreferences.setMockInitialValues(<String, Object>{
+      'hasAcceptedDisclaimer': true,
       'infusionTimers': <String>[jsonEncode(recoveredTimerJson)],
     });
 
@@ -192,6 +326,7 @@ void main() {
     );
 
     SharedPreferences.setMockInitialValues(<String, Object>{
+      'hasAcceptedDisclaimer': true,
       'infusionTimers': <String>[jsonEncode(timer.toJson())],
     });
 
@@ -228,18 +363,21 @@ void main() {
     await tester.tap(find.byTooltip('Enable Notifications'));
     await tester.pump(); // start the snackbar frame
 
-    expect(find.text('Notification permissions granted'), findsOneWidget);
+    expect(
+      find.text('Notification permissions granted. Background alerts are enabled.'),
+      findsOneWidget,
+    );
   });
 
   testWidgets('does not show the permission warning banner before a denial', (WidgetTester tester) async {
-    SharedPreferences.setMockInitialValues(<String, Object>{});
+    SharedPreferences.setMockInitialValues(<String, Object>{
+      'hasAcceptedDisclaimer': true,
+    });
 
     await pumpApp(tester);
 
     expect(
-      find.text(
-        'Notification permissions denied. Background alerts will not function. Please monitor timers in-app.',
-      ),
+      find.text(deniedPermissionWarning),
       findsNothing,
     );
   });
@@ -253,6 +391,7 @@ void main() {
     final fakeNotificationService = FakeNotificationService();
 
     SharedPreferences.setMockInitialValues(<String, Object>{
+      'hasAcceptedDisclaimer': true,
       'infusionTimers': <String>[jsonEncode(timer.toJson())],
     });
 
@@ -263,7 +402,9 @@ void main() {
   });
 
   testWidgets('adding a timer schedules milestone notifications', (WidgetTester tester) async {
-    SharedPreferences.setMockInitialValues(<String, Object>{});
+    SharedPreferences.setMockInitialValues(<String, Object>{
+      'hasAcceptedDisclaimer': true,
+    });
     final fakeNotificationService = FakeNotificationService();
 
     await pumpApp(tester, notificationService: fakeNotificationService);
@@ -274,7 +415,9 @@ void main() {
   });
 
   testWidgets('pausing a timer resyncs milestone notifications', (WidgetTester tester) async {
-    SharedPreferences.setMockInitialValues(<String, Object>{});
+    SharedPreferences.setMockInitialValues(<String, Object>{
+      'hasAcceptedDisclaimer': true,
+    });
     final fakeNotificationService = FakeNotificationService();
 
     await pumpApp(tester, notificationService: fakeNotificationService);
@@ -288,7 +431,9 @@ void main() {
   });
 
   testWidgets('removing a timer cancels milestone notifications', (WidgetTester tester) async {
-    SharedPreferences.setMockInitialValues(<String, Object>{});
+    SharedPreferences.setMockInitialValues(<String, Object>{
+      'hasAcceptedDisclaimer': true,
+    });
     final fakeNotificationService = FakeNotificationService();
 
     await pumpApp(tester, notificationService: fakeNotificationService);
@@ -312,17 +457,19 @@ void main() {
     await tester.tap(find.byTooltip('Enable Notifications'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Notification permissions not granted'), findsOneWidget);
     expect(
       find.text(
-        'Notification permissions denied. Background alerts will not function. Please monitor timers in-app.',
+        'Notification permissions denied. Re-enable notifications in system settings and monitor timers in-app until alerts are restored.',
       ),
       findsOneWidget,
     );
+    expect(find.text(deniedPermissionWarning), findsOneWidget);
   });
 
   testWidgets('shows the permission warning banner for an existing denied state', (WidgetTester tester) async {
-    SharedPreferences.setMockInitialValues(<String, Object>{});
+    SharedPreferences.setMockInitialValues(<String, Object>{
+      'hasAcceptedDisclaimer': true,
+    });
 
     await pumpApp(
       tester,
@@ -331,16 +478,13 @@ void main() {
       ),
     );
 
-    expect(
-      find.text(
-        'Notification permissions denied. Background alerts will not function. Please monitor timers in-app.',
-      ),
-      findsOneWidget,
-    );
+    expect(find.text(deniedPermissionWarning), findsOneWidget);
   });
 
   testWidgets('shows the permission warning banner for an existing unavailable state', (WidgetTester tester) async {
-    SharedPreferences.setMockInitialValues(<String, Object>{});
+    SharedPreferences.setMockInitialValues(<String, Object>{
+      'hasAcceptedDisclaimer': true,
+    });
 
     await pumpApp(
       tester,
@@ -349,11 +493,102 @@ void main() {
       ),
     );
 
-    expect(
-      find.text(
-        'Notification permissions unavailable on this platform. Background alerts will not function. Please monitor timers in-app.',
+    expect(find.text(unavailablePermissionWarning), findsOneWidget);
+  });
+
+  testWidgets('denied warning does not block creating a timer', (WidgetTester tester) async {
+    SharedPreferences.setMockInitialValues(<String, Object>{
+      'hasAcceptedDisclaimer': true,
+    });
+
+    await pumpApp(
+      tester,
+      notificationService: FakeNotificationService(
+        initialPermissionStatus: NotificationPermissionStatus.denied,
       ),
-      findsOneWidget,
     );
+
+    expect(find.text(deniedPermissionWarning), findsOneWidget);
+
+    await addTimer(tester);
+
+    expect(find.text('Saline'), findsOneWidget);
+    expect(find.textContaining('Volume: 6.0 ml'), findsOneWidget);
+    expect(find.text(deniedPermissionWarning), findsOneWidget);
+  });
+
+  testWidgets('denied warning does not block pause resume and remove actions', (WidgetTester tester) async {
+    SharedPreferences.setMockInitialValues(<String, Object>{
+      'hasAcceptedDisclaimer': true,
+    });
+
+    await pumpApp(
+      tester,
+      notificationService: FakeNotificationService(
+        initialPermissionStatus: NotificationPermissionStatus.denied,
+      ),
+    );
+    await addTimer(tester);
+
+    expect(find.text(deniedPermissionWarning), findsOneWidget);
+    expect(find.byTooltip('Pause'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Pause'));
+    await tester.pumpAndSettle();
+
+    expect(find.byTooltip('Resume'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Resume'));
+    await tester.pumpAndSettle();
+
+    expect(find.byTooltip('Pause'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Remove'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(TextButton, 'Remove'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Saline'), findsNothing);
+    expect(find.text('No active infusions'), findsOneWidget);
+    expect(find.text(deniedPermissionWarning), findsOneWidget);
+  });
+
+  testWidgets('unavailable warning does not block core timer use', (WidgetTester tester) async {
+    SharedPreferences.setMockInitialValues(<String, Object>{
+      'hasAcceptedDisclaimer': true,
+    });
+
+    await pumpApp(
+      tester,
+      notificationService: FakeNotificationService(
+        initialPermissionStatus: NotificationPermissionStatus.unavailable,
+      ),
+    );
+
+    expect(find.text(unavailablePermissionWarning), findsOneWidget);
+
+    await addTimer(tester, title: 'Dextrose');
+
+    expect(find.text('Dextrose'), findsOneWidget);
+    expect(find.byTooltip('Pause'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Pause'));
+    await tester.pumpAndSettle();
+
+    expect(find.byTooltip('Resume'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Resume'));
+    await tester.pumpAndSettle();
+
+    expect(find.byTooltip('Pause'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Remove'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(TextButton, 'Remove'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Dextrose'), findsNothing);
+    expect(find.text('No active infusions'), findsOneWidget);
+    expect(find.text(unavailablePermissionWarning), findsOneWidget);
   });
 }

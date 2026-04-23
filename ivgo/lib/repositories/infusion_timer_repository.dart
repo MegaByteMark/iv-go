@@ -13,18 +13,22 @@ class InfusionTimerRepository {
   final Future<SharedPreferences> Function() _sharedPreferencesFactory;
 
   Future<List<InfusionTimer>> loadTimers() async {
-    final SharedPreferences prefs = await _sharedPreferencesFactory();
-    final List<String>? timersJson = prefs.getStringList(_storageKey);
+    try {
+      final SharedPreferences prefs = await _sharedPreferencesFactory();
+      final List<String>? timersJson = prefs.getStringList(_storageKey);
 
-    if (timersJson == null) {
+      if (timersJson == null) {
+        return <InfusionTimer>[];
+      }
+
+      return timersJson
+          .map(
+            (String json) => InfusionTimer.fromJson(jsonDecode(json) as Map<String, dynamic>),
+          )
+          .toList();
+    } catch (_) {
       return <InfusionTimer>[];
     }
-
-    return timersJson
-        .map(
-          (String json) => InfusionTimer.fromJson(jsonDecode(json) as Map<String, dynamic>),
-        )
-        .toList();
   }
 
   Future<void> saveTimers(List<InfusionTimer> timers) async {

@@ -29,6 +29,21 @@ void main() {
       expect(milestones[2].trigger, InfusionNotificationTrigger.afterEnd);
     });
 
+    test('returns default milestones when shared preferences loading fails', () async {
+      repository = InfusionNotificationSettingsRepository(
+        sharedPreferencesFactory: () async {
+          throw Exception('Shared preferences unavailable');
+        },
+      );
+
+      final List<InfusionNotificationMilestone> milestones = await repository.loadMilestones();
+
+      expect(milestones, hasLength(3));
+      expect(milestones[0].key, 'one_minute_remaining');
+      expect(milestones[1].key, 'ten_minutes_remaining');
+      expect(milestones[2].key, 'ended_plus_ten_minutes');
+    });
+
     test('saves and restores milestones through shared preferences', () async {
       final List<InfusionNotificationMilestone> milestones = <InfusionNotificationMilestone>[
         InfusionNotificationMilestone(

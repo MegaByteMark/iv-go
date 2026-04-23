@@ -15,20 +15,7 @@ class NotificationPermissionWarningBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     return Watch((context) {
       final NotificationPermissionStatus status = notificationService.permissionStatus.value;
-      String? message;
-
-      switch (status) {
-        case NotificationPermissionStatus.denied:
-          message = 'Notification permissions denied. Background alerts will not function. Please monitor timers in-app.';
-          break;
-        case NotificationPermissionStatus.unavailable:
-          message = 'Notification permissions unavailable on this platform. Background alerts will not function. Please monitor timers in-app.';
-          break;
-        case NotificationPermissionStatus.granted:
-        case NotificationPermissionStatus.notDetermined:
-          message = null;
-          break;
-      }
+      final String? message = status.warningMessage;
 
       if (message == null) {
         return const SizedBox.shrink();

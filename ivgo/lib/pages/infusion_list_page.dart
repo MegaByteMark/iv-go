@@ -5,6 +5,7 @@ import 'package:ivgo/domain/infusion_characteristics.dart';
 import 'package:ivgo/domain/infusion_timer.dart';
 import 'package:ivgo/pages/infusion_list_controller.dart';
 import 'package:ivgo/repositories/infusion_timer_repository.dart';
+import 'package:ivgo/services/notification_permission_status.dart';
 import 'package:gap/gap.dart';
 import 'package:ivgo/services/notification_service.dart';
 import 'package:ivgo/widgets/infusion_row.dart';
@@ -144,11 +145,11 @@ class _InfusionListPageState extends State<InfusionListPage> with WidgetsBinding
       return;
     }
 
+    final NotificationPermissionStatus status = granted ? NotificationPermissionStatus.granted : widget.notificationService.permissionStatus.value;
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(
-          granted ? 'Notification permissions granted' : 'Notification permissions not granted',
-        ),
+        content: Text(status.requestFeedbackMessage),
       ),
     );
   }
