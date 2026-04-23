@@ -79,7 +79,7 @@ class _InfusionListPageState extends State<InfusionListPage> with WidgetsBinding
                   onPressed: _requestNotificationPermissions,
                   tooltip: 'Enable Notifications',
                 ),
-              if (widget.notificationService.supportsExactAlarmPermissionRequest)
+              if (widget.notificationService.supportsExactAlarmPermissionRequest && permissionStatus != NotificationPermissionStatus.granted)
                 IconButton(
                   icon: const Icon(Icons.alarm_outlined),
                   tooltip: 'Enable Exact Alarms',
