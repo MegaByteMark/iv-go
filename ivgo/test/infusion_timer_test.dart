@@ -95,6 +95,27 @@ void main() {
       expect(timer.remainingSeconds.inSeconds, 70);
     });
 
+    test('completed timers show the full target volume after a paused rate change', () {
+      final timer = createTimer(volume: 10);
+
+      timer.start();
+      now = now.add(const Duration(seconds: 99));
+      timer.reconcile();
+      timer.stop();
+
+      timer.changeCharacteristics(
+        InfusionCharacteristics(volume: 10, dropFactor: 20, flowRate: 80),
+      );
+      timer.start();
+
+      now = now.add(const Duration(seconds: 76));
+      timer.reconcile();
+
+      expect(timer.isEnded, isTrue);
+      expect(timer.remainingSeconds, Duration.zero);
+      expect(timer.infusedVolume, closeTo(10, 0.0001));
+    });
+
     test('reset clears progress and restores the initial configuration', () {
       final timer = createTimer(volume: 10);
 

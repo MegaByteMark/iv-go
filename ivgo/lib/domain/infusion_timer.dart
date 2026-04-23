@@ -164,7 +164,7 @@ class InfusionTimer {
 
     if (infusedVolume >= characteristics.volume) {
       _markEnded(completedAt: _completedAt ?? now);
-      
+
       return;
     }
 
@@ -289,7 +289,10 @@ class InfusionTimer {
 
   void _refreshComputedFields() {
     durationInSeconds = _computeInfusionDurationInSeconds(characteristics.volume);
-    infusedVolume = _calculateInfusedVolumeMl();
+    final double calculatedInfusedVolume = _calculateInfusedVolumeMl();
+    final double cappedInfusedVolume = calculatedInfusedVolume > characteristics.volume ? characteristics.volume : calculatedInfusedVolume;
+
+    infusedVolume = isEnded ? characteristics.volume : cappedInfusedVolume;
 
     final double remainingVolume = characteristics.volume - infusedVolume;
     remainingSeconds = _computeInfusionDurationInSeconds(

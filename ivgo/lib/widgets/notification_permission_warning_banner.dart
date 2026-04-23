@@ -21,14 +21,16 @@ class NotificationPermissionWarningBanner extends StatelessWidget {
         return const SizedBox.shrink();
       }
 
+      final ColorScheme colorScheme = Theme.of(context).colorScheme;
+
       return Container(
         width: double.infinity,
-        color: Theme.of(context).colorScheme.errorContainer.withValues(alpha: 0.8),
+        color: colorScheme.error,
         padding: const EdgeInsets.all(8.0),
         child: Text(
           message,
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.onError,
+                color: colorScheme.onError,
               ),
           textAlign: TextAlign.center,
         ),

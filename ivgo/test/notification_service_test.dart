@@ -142,6 +142,34 @@ void main() {
       expect(fakeNotificationClient.scheduledNotifications.single.body, 'Saline is nearly complete.');
     });
 
+    test('replaces dot-notation placeholders in notification templates', () async {
+      final InfusionNotificationMilestone milestone = createMilestone(
+        key: 'one_minute_remaining',
+        title: '1 minute remaining',
+        body: 'Infusion {timer.title} is nearly complete for {milestone.title}.',
+        offset: const Duration(minutes: 1),
+        trigger: InfusionNotificationTrigger.beforeEnd,
+      );
+      final NotificationService service = NotificationService(
+        nowProvider: () => now,
+        notificationClient: fakeNotificationClient,
+        settingsRepository: _FakeNotificationSettingsRepository(
+          <InfusionNotificationMilestone>[milestone],
+        ),
+      );
+      final InfusionTimer timer = createTimer(volume: 6);
+
+      timer.start();
+
+      await service.scheduleMilestonesForTimer(timer);
+
+      expect(fakeNotificationClient.scheduledNotifications, hasLength(1));
+      expect(
+        fakeNotificationClient.scheduledNotifications.single.body,
+        'Infusion Saline is nearly complete for 1 minute remaining.',
+      );
+    });
+
     test('uses time-sensitive iOS details for milestone notifications', () async {
       final InfusionNotificationMilestone milestone = createMilestone(
         key: 'one_minute_remaining',

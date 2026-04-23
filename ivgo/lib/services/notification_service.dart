@@ -282,7 +282,7 @@ class NotificationService {
   }
 
   String _replacePlaceholders(String template, InfusionTimer timer, InfusionNotificationMilestone milestone) {
-    return template.replaceAll('{timer_title}', timer.title).replaceAll('{milestone_title}', milestone.title);
+    return template.replaceAll('{timer.title}', timer.title).replaceAll('{timer_title}', timer.title).replaceAll('{milestone.title}', milestone.title).replaceAll('{milestone_title}', milestone.title);
   }
 
   tz.TZDateTime? _scheduledTimeForMilestone(InfusionTimer timer, InfusionNotificationMilestone milestone, {required DateTime now}) {
@@ -407,7 +407,7 @@ class NotificationService {
       defaultPresentBanner: true,
       defaultPresentList: true,
     );
-    
+
     const WindowsInitializationSettings windowsSettings = WindowsInitializationSettings(
       appName: 'IVGo',
       appUserModelId: _windowsAppUserModelId,

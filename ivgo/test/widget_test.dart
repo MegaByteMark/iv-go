@@ -6,10 +6,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ivgo/domain/infusion_characteristics.dart';
 import 'package:ivgo/domain/infusion_timer.dart';
 import 'package:ivgo/main.dart';
+import 'package:ivgo/pages/infusion_list_controller.dart';
 import 'package:ivgo/repositories/disclaimer_acceptance_repository.dart';
+import 'package:ivgo/repositories/infusion_timer_repository.dart';
 import 'package:ivgo/services/notification_permission_status.dart';
 import 'package:ivgo/services/notification_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:signals_flutter/signals_flutter.dart';
 
 import 'fakes/fake_disclaimer_acceptance_repository.dart';
 import 'fakes/fake_notification_service.dart';
@@ -35,7 +38,57 @@ class NeverCompletingDisclaimerAcceptanceRepository extends DisclaimerAcceptance
   }
 }
 
+class FakeInfusionTimerRepository extends InfusionTimerRepository {
+  FakeInfusionTimerRepository(this.timers);
+
+  final List<InfusionTimer> timers;
+
+  @override
+  Future<List<InfusionTimer>> loadTimers() async => timers;
+
+  @override
+  Future<void> saveTimers(List<InfusionTimer> timers) async {}
+}
+
 void main() {
+  InfusionTimer createCompletedTimer({
+    required int id,
+    required String title,
+  }) {
+    DateTime now = DateTime.utc(2026, 4, 23, 12);
+    final InfusionTimer timer = InfusionTimer(
+      id,
+      title,
+      InfusionCharacteristics(volume: 1, dropFactor: 20, flowRate: 60),
+      nowProvider: () => now,
+    );
+
+    timer.start();
+    now = now.add(const Duration(seconds: 30));
+    timer.reconcile();
+
+    return timer;
+  }
+
+  InfusionTimer createPausedTimer({
+    required int id,
+    required String title,
+  }) {
+    DateTime now = DateTime.utc(2026, 4, 23, 12);
+    final InfusionTimer timer = InfusionTimer(
+      id,
+      title,
+      InfusionCharacteristics(volume: 6, dropFactor: 20, flowRate: 60),
+      nowProvider: () => now,
+    );
+
+    timer.start();
+    now = now.add(const Duration(seconds: 10));
+    timer.stop();
+
+    return timer;
+  }
+
   Future<void> pumpApp(
     WidgetTester tester, {
     NotificationService? notificationService,
@@ -367,6 +420,18 @@ void main() {
       find.text('Notification permissions granted. Background alerts are enabled.'),
       findsOneWidget,
     );
+    expect(find.byTooltip('Enable Notifications'), findsNothing);
+  });
+
+  testWidgets('hides the enable notifications action when permissions are already granted', (WidgetTester tester) async {
+    await pumpApp(
+      tester,
+      notificationService: FakeNotificationService(
+        initialPermissionStatus: NotificationPermissionStatus.granted,
+      ),
+    );
+
+    expect(find.byTooltip('Enable Notifications'), findsNothing);
   });
 
   testWidgets('does not show the permission warning banner before a denial', (WidgetTester tester) async {
@@ -412,6 +477,121 @@ void main() {
 
     expect(fakeNotificationService.scheduledMilestoneCalls, 1);
     expect(fakeNotificationService.scheduledTimerIds, <int>[1]);
+  });
+
+  testWidgets('does not show a clear completed action when no completed infusions exist', (WidgetTester tester) async {
+    final InfusionTimer activeTimer = createPausedTimer(id: 1, title: 'Active');
+
+    SharedPreferences.setMockInitialValues(<String, Object>{
+      'hasAcceptedDisclaimer': true,
+      'infusionTimers': <String>[jsonEncode(activeTimer.toJson())],
+    });
+
+    await pumpApp(tester);
+
+    expect(find.byTooltip('Clear Completed Infusions'), findsNothing);
+  });
+
+  testWidgets('shows a clear completed action when completed infusions exist', (WidgetTester tester) async {
+    final InfusionTimer completedTimer = createCompletedTimer(id: 1, title: 'Finished');
+
+    SharedPreferences.setMockInitialValues(<String, Object>{
+      'hasAcceptedDisclaimer': true,
+      'infusionTimers': <String>[jsonEncode(completedTimer.toJson())],
+    });
+
+    await pumpApp(tester);
+
+    expect(find.byTooltip('Clear Completed Infusions'), findsOneWidget);
+  });
+
+  testWidgets('clear completed infusions requires confirmation and removes only completed timers', (WidgetTester tester) async {
+    final FakeNotificationService fakeNotificationService = FakeNotificationService();
+    final InfusionTimer completedTimer = createCompletedTimer(id: 1, title: 'Finished');
+    final InfusionTimer activeTimer = createPausedTimer(id: 2, title: 'Active');
+
+    SharedPreferences.setMockInitialValues(<String, Object>{
+      'hasAcceptedDisclaimer': true,
+      'infusionTimers': <String>[
+        jsonEncode(completedTimer.toJson()),
+        jsonEncode(activeTimer.toJson()),
+      ],
+    });
+
+    await pumpApp(
+      tester,
+      notificationService: fakeNotificationService,
+    );
+
+    expect(find.text('Finished'), findsOneWidget);
+    expect(find.text('Active'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Clear Completed Infusions'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Clear completed infusions?'), findsOneWidget);
+    expect(
+      find.text('This will permanently remove 1 completed infusion from the list. This cannot be undone.'),
+      findsOneWidget,
+    );
+
+    await tester.tap(find.widgetWithText(TextButton, 'Cancel'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Finished'), findsOneWidget);
+    expect(find.text('Active'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Clear Completed Infusions'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Clear Completed'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Finished'), findsNothing);
+    expect(find.text('Active'), findsOneWidget);
+    expect(fakeNotificationService.cancelledMilestoneCalls, 1);
+    expect(fakeNotificationService.cancelledTimerIds, <int>[1]);
+  });
+
+  testWidgets('the final running timer refreshes to completed when it reaches zero', (WidgetTester tester) async {
+    DateTime now = DateTime.utc(2026, 4, 23, 12);
+    final InfusionTimer timer = InfusionTimer(
+      1,
+      'Rapid',
+      InfusionCharacteristics(volume: 1, dropFactor: 20, flowRate: 1200),
+      nowProvider: () => now,
+    );
+    final InfusionListController controller = InfusionListController(
+      timerRepository: FakeInfusionTimerRepository(<InfusionTimer>[timer]),
+      notificationService: FakeNotificationService(),
+    );
+
+    addTearDown(controller.dispose);
+
+    timer.start();
+    await controller.initialize();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Watch((context) {
+            final List<InfusionTimer> timers = controller.infusionTimers.value;
+
+            if (timers.isEmpty) {
+              return const Text('empty');
+            }
+
+            return Text(timers.single.isRunning ? 'running' : 'stopped');
+          }),
+        ),
+      ),
+    );
+
+    expect(find.text('running'), findsOneWidget);
+
+    now = now.add(const Duration(seconds: 2));
+    await tester.pump(const Duration(seconds: 1));
+
+    expect(find.text('stopped'), findsOneWidget);
   });
 
   testWidgets('pausing a timer resyncs milestone notifications', (WidgetTester tester) async {
@@ -479,6 +659,31 @@ void main() {
     );
 
     expect(find.text(deniedPermissionWarning), findsOneWidget);
+  });
+
+  testWidgets('uses the error color for the denied permission warning banner', (WidgetTester tester) async {
+    SharedPreferences.setMockInitialValues(<String, Object>{
+      'hasAcceptedDisclaimer': true,
+    });
+
+    await pumpApp(
+      tester,
+      notificationService: FakeNotificationService(
+        initialPermissionStatus: NotificationPermissionStatus.denied,
+      ),
+    );
+
+    final BuildContext context = tester.element(find.text(deniedPermissionWarning));
+    final ColorScheme colorScheme = Theme.of(context).colorScheme;
+    final Finder bannerFinder = find.ancestor(
+      of: find.text(deniedPermissionWarning),
+      matching: find.byWidgetPredicate(
+        (Widget widget) => widget is Container && widget.color != null,
+      ),
+    );
+    final Container banner = tester.widget<Container>(bannerFinder);
+
+    expect(banner.color, colorScheme.error);
   });
 
   testWidgets('shows the permission warning banner for an existing unavailable state', (WidgetTester tester) async {

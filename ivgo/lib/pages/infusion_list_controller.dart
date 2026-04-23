@@ -34,8 +34,7 @@ class InfusionListController {
   }
 
   Future<void> loadState() async {
-    final List<InfusionTimer> restoredTimers =
-        await _timerRepository.loadTimers();
+    final List<InfusionTimer> restoredTimers = await _timerRepository.loadTimers();
 
     for (final timer in restoredTimers) {
       timer.onRestore();
@@ -134,6 +133,29 @@ class InfusionListController {
     await _cancelTimerNotifications(timer);
   }
 
+  Future<void> clearCompletedTimers() async {
+    if (_disposed) {
+      return;
+    }
+
+    final List<InfusionTimer> completedTimers = currentTimers.where((timer) => timer.isEnded).toList(growable: false);
+
+    if (completedTimers.isEmpty) {
+      return;
+    }
+
+    final List<InfusionTimer> remainingTimers = currentTimers.where((timer) => !timer.isEnded).toList();
+
+    _replaceInfusionTimers(remainingTimers);
+    _manageRefreshTimer();
+
+    for (final InfusionTimer timer in completedTimers) {
+      await _notificationService.cancelMilestonesForTimer(timer);
+    }
+
+    await saveState();
+  }
+
   void dispose() {
     _disposed = true;
     unawaited(_timerRepository.saveTimers(currentTimers));
@@ -167,15 +189,14 @@ class InfusionListController {
           infusionTimer.reconcile();
         }
 
-        if (currentTimers.isEmpty ||
-            !currentTimers.any((infusionTimer) => infusionTimer.isRunning)) {
+        _refreshInfusionTimers();
+
+        if (currentTimers.isEmpty || !currentTimers.any((infusionTimer) => infusionTimer.isRunning)) {
           timer.cancel();
           _refreshTimer = null;
-        } else {
-          _refreshInfusionTimers();
         }
       });
-      
+
       return;
     }
 

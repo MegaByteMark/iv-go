@@ -57,23 +57,37 @@ class _InfusionListPageState extends State<InfusionListPage> with WidgetsBinding
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: Text(widget.title),
-        actions: [
-          if (widget.notificationService.supportsNotificationPermissionRequest)
-            IconButton(
-              icon: const Icon(Icons.notifications),
-              onPressed: _requestNotificationPermissions,
-              tooltip: 'Enable Notifications',
-            ),
-          if (widget.notificationService.supportsExactAlarmPermissionRequest)
-            IconButton(
-              icon: const Icon(Icons.alarm_outlined),
-              tooltip: 'Enable Exact Alarms',
-              onPressed: _requestExactAlarmPermission,
-            ),
-        ],
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(kToolbarHeight),
+        child: Watch((context) {
+          final int completedTimerCount = _controller.infusionTimers.value.where((InfusionTimer timer) => timer.isEnded).length;
+          final NotificationPermissionStatus permissionStatus = widget.notificationService.permissionStatus.value;
+
+          return AppBar(
+            backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+            title: Text(widget.title),
+            actions: [
+              if (completedTimerCount > 0)
+                IconButton(
+                  icon: const Icon(Icons.delete_sweep_outlined),
+                  tooltip: 'Clear Completed Infusions',
+                  onPressed: _confirmClearCompletedInfusions,
+                ),
+              if (widget.notificationService.supportsNotificationPermissionRequest && permissionStatus != NotificationPermissionStatus.granted)
+                IconButton(
+                  icon: const Icon(Icons.notifications),
+                  onPressed: _requestNotificationPermissions,
+                  tooltip: 'Enable Notifications',
+                ),
+              if (widget.notificationService.supportsExactAlarmPermissionRequest)
+                IconButton(
+                  icon: const Icon(Icons.alarm_outlined),
+                  tooltip: 'Enable Exact Alarms',
+                  onPressed: _requestExactAlarmPermission,
+                ),
+            ],
+          );
+        }),
       ),
       body: Column(
         children: [
@@ -152,6 +166,47 @@ class _InfusionListPageState extends State<InfusionListPage> with WidgetsBinding
         content: Text(status.requestFeedbackMessage),
       ),
     );
+  }
+
+  Future<void> _confirmClearCompletedInfusions() async {
+    final int completedTimerCount = _controller.currentTimers.where((InfusionTimer timer) => timer.isEnded).length;
+
+    if (completedTimerCount == 0) {
+      return;
+    }
+
+    final String infusionLabel = completedTimerCount == 1 ? 'infusion' : 'infusions';
+    final bool? confirmed = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Clear completed infusions?'),
+          content: Text(
+            'This will permanently remove $completedTimerCount completed $infusionLabel from the list. This cannot be undone.',
+          ),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(false);
+              },
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () {
+                Navigator.of(context).pop(true);
+              },
+              child: const Text('Clear Completed'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed != true || !mounted) {
+      return;
+    }
+
+    await _controller.clearCompletedTimers();
   }
 
   Future<InfusionTimer?> _addOrEditTimer(InfusionTimer? theTimer) async {
