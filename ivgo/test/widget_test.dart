@@ -219,6 +219,17 @@ void main() {
     await tester.pumpAndSettle();
   }
 
+  Future<void> openInfusionActionsMenu(WidgetTester tester) async {
+    await tester.tap(find.byTooltip('More Actions').first);
+    await tester.pumpAndSettle();
+  }
+
+  Future<void> selectInfusionAction(WidgetTester tester, String label) async {
+    await openInfusionActionsMenu(tester);
+    await tester.tap(find.text(label).last);
+    await tester.pumpAndSettle();
+  }
+
   testWidgets('shows the empty infusion state', (WidgetTester tester) async {
     SharedPreferences.setMockInitialValues(<String, Object>{});
 
@@ -244,9 +255,9 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Enter a title'), findsOneWidget);
-    expect(find.text('Enter volume'), findsOneWidget);
-    expect(find.text('Enter drop factor'), findsOneWidget);
-    expect(find.text('Enter flow rate'), findsOneWidget);
+    expect(find.text('Enter Target Volume'), findsOneWidget);
+    expect(find.text('Enter Drop Factor'), findsOneWidget);
+    expect(find.text('Enter Flow Rate'), findsOneWidget);
     expect(find.byType(ListTile), findsNothing);
   });
 
@@ -268,10 +279,80 @@ void main() {
     await tester.tap(find.widgetWithText(FilledButton, 'Add'));
     await tester.pumpAndSettle();
 
-    expect(find.text('volume must be a number'), findsOneWidget);
-    expect(find.text('drop factor must be greater than 0'), findsOneWidget);
-    expect(find.text('flow rate must be greater than 0'), findsOneWidget);
+    expect(find.text('Enter Target Volume'), findsOneWidget);
+    expect(find.text('Enter Drop Factor'), findsOneWidget);
+    expect(find.text('Flow Rate must be greater than 0'), findsOneWidget);
     expect(find.byType(ListTile), findsNothing);
+  });
+
+  testWidgets('filters non-numeric characters from numeric timer fields', (WidgetTester tester) async {
+    SharedPreferences.setMockInitialValues(<String, Object>{
+      'hasAcceptedDisclaimer': true,
+    });
+
+    await pumpApp(tester);
+
+    await tester.tap(find.byTooltip('Add New Infusion'));
+    await tester.pumpAndSettle();
+
+    final Finder volumeFieldFinder = find.byType(TextFormField).at(1);
+    final Finder dropFactorFieldFinder = find.byType(TextFormField).at(2);
+    final Finder flowRateFieldFinder = find.byType(TextFormField).at(3);
+
+    await tester.enterText(volumeFieldFinder, '12.5');
+    await tester.enterText(volumeFieldFinder, '12.5a');
+    await tester.enterText(dropFactorFieldFinder, '20');
+    await tester.enterText(dropFactorFieldFinder, '20-');
+    await tester.enterText(flowRateFieldFinder, '60');
+    await tester.enterText(flowRateFieldFinder, '60x');
+
+    expect(
+      tester.widget<TextFormField>(volumeFieldFinder).controller?.text,
+      '12.5',
+    );
+    expect(
+      tester.widget<TextFormField>(dropFactorFieldFinder).controller?.text,
+      '20',
+    );
+    expect(
+      tester.widget<TextFormField>(flowRateFieldFinder).controller?.text,
+      '60',
+    );
+  });
+
+  testWidgets('uses rounded input borders for infusion form fields', (WidgetTester tester) async {
+    SharedPreferences.setMockInitialValues(<String, Object>{
+      'hasAcceptedDisclaimer': true,
+    });
+
+    await pumpApp(tester);
+
+    await tester.tap(find.byTooltip('Add New Infusion'));
+    await tester.pumpAndSettle();
+
+    final InputDecorator titleDecorator = tester.widget<InputDecorator>(find.byType(InputDecorator).first);
+    final OutlineInputBorder border = titleDecorator.decoration.enabledBorder! as OutlineInputBorder;
+
+    expect(
+      border.borderRadius.resolve(TextDirection.ltr).topLeft.x,
+      greaterThan(0),
+    );
+  });
+
+  testWidgets('uses a larger primary submit button in the infusion form', (WidgetTester tester) async {
+    SharedPreferences.setMockInitialValues(<String, Object>{
+      'hasAcceptedDisclaimer': true,
+    });
+
+    await pumpApp(tester);
+
+    await tester.tap(find.byTooltip('Add New Infusion'));
+    await tester.pumpAndSettle();
+
+    final Size addButtonSize = tester.getSize(find.widgetWithText(FilledButton, 'Add'));
+
+    expect(addButtonSize.height, greaterThanOrEqualTo(56));
+    expect(addButtonSize.width, greaterThan(100));
   });
 
   testWidgets('restores persisted timers into the list', (WidgetTester tester) async {
@@ -290,7 +371,25 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Saline'), findsOneWidget);
-    expect(find.byType(ListTile), findsOneWidget);
+    expect(find.byType(Card), findsOneWidget);
+  });
+
+  testWidgets('shows hour-aware remaining time for long running durations', (WidgetTester tester) async {
+    final timer = InfusionTimer(
+      1,
+      'Long saline',
+      InfusionCharacteristics(volume: 555, dropFactor: 20, flowRate: 60),
+    );
+
+    SharedPreferences.setMockInitialValues(<String, Object>{
+      'hasAcceptedDisclaimer': true,
+      'infusionTimers': <String>[jsonEncode(timer.toJson())],
+    });
+
+    await pumpApp(tester);
+
+    expect(find.text('Long saline'), findsOneWidget);
+    expect(find.text('3h 5m'), findsOneWidget);
   });
 
   testWidgets('highlights timers recovered as overdue after downtime', (WidgetTester tester) async {
@@ -325,8 +424,11 @@ void main() {
       findsOneWidget,
     );
 
-    final ListTile recoveredTile = tester.widget<ListTile>(find.byType(ListTile));
-    expect(recoveredTile.tileColor, isNotNull);
+    final BuildContext context = tester.element(find.text('Saline'));
+    final Card recoveredCard = tester.widget<Card>(
+      find.ancestor(of: find.text('Saline'), matching: find.byType(Card)),
+    );
+    expect(recoveredCard.color, Theme.of(context).colorScheme.errorContainer);
   });
 
   testWidgets('acknowledging a recovered timer clears the warning state', (WidgetTester tester) async {
@@ -356,19 +458,18 @@ void main() {
 
     await pumpApp(tester);
 
-    expect(find.byTooltip('Acknowledge Recovered Timer'), findsOneWidget);
-
-    await tester.tap(find.byTooltip('Acknowledge Recovered Timer'));
-    await tester.pumpAndSettle();
+    await selectInfusionAction(tester, 'Acknowledge');
 
     expect(
       find.text('Completed while the app was unavailable. Review this infusion.'),
       findsNothing,
     );
-    expect(find.byTooltip('Acknowledge Recovered Timer'), findsNothing);
 
-    final ListTile acknowledgedTile = tester.widget<ListTile>(find.byType(ListTile));
-    expect(acknowledgedTile.tileColor, isNull);
+    final BuildContext context = tester.element(find.text('Saline'));
+    final Card acknowledgedCard = tester.widget<Card>(
+      find.ancestor(of: find.text('Saline'), matching: find.byType(Card)),
+    );
+    expect(acknowledgedCard.color, Theme.of(context).colorScheme.surfaceContainerLow);
   });
 
   testWidgets('invalid edits do not overwrite an existing timer', (WidgetTester tester) async {
@@ -385,8 +486,7 @@ void main() {
 
     await pumpApp(tester);
 
-    await tester.tap(find.byTooltip('Edit Infusion'));
-    await tester.pumpAndSettle();
+    await selectInfusionAction(tester, 'Edit');
 
     await tester.enterText(find.byType(TextFormField).at(0), '');
     await tester.enterText(find.byType(TextFormField).at(1), '0');
@@ -395,14 +495,15 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Enter a title'), findsOneWidget);
-    expect(find.text('volume must be greater than 0'), findsOneWidget);
+    expect(find.text('Target Volume must be greater than 0'), findsOneWidget);
     expect(find.text('Edit Infusion :: Saline'), findsOneWidget);
 
-    await tester.tap(find.widgetWithText(TextButton, 'Cancel'));
+    await tester.tap(find.widgetWithText(OutlinedButton, 'Cancel'));
     await tester.pumpAndSettle();
 
     expect(find.text('Saline'), findsOneWidget);
-    expect(find.textContaining('Volume: 6.0 ml'), findsOneWidget);
+    expect(find.text('Target'), findsOneWidget);
+    expect(find.text('6.0 ml'), findsOneWidget);
   });
 
   testWidgets('requests notification permissions from the app bar action', (WidgetTester tester) async {
@@ -603,8 +704,7 @@ void main() {
     await pumpApp(tester, notificationService: fakeNotificationService);
     await addTimer(tester);
 
-    await tester.tap(find.byTooltip('Pause'));
-    await tester.pumpAndSettle();
+    await selectInfusionAction(tester, 'Pause');
 
     expect(fakeNotificationService.scheduledMilestoneCalls, 2);
     expect(fakeNotificationService.scheduledTimerIds, <int>[1, 1]);
@@ -619,8 +719,7 @@ void main() {
     await pumpApp(tester, notificationService: fakeNotificationService);
     await addTimer(tester);
 
-    await tester.tap(find.byTooltip('Remove'));
-    await tester.pumpAndSettle();
+    await selectInfusionAction(tester, 'Remove');
     await tester.tap(find.widgetWithText(TextButton, 'Remove'));
     await tester.pumpAndSettle();
 
@@ -718,7 +817,8 @@ void main() {
     await addTimer(tester);
 
     expect(find.text('Saline'), findsOneWidget);
-    expect(find.textContaining('Volume: 6.0 ml'), findsOneWidget);
+    expect(find.text('Target'), findsOneWidget);
+    expect(find.text('6.0 ml'), findsOneWidget);
     expect(find.text(deniedPermissionWarning), findsOneWidget);
   });
 
@@ -736,20 +836,12 @@ void main() {
     await addTimer(tester);
 
     expect(find.text(deniedPermissionWarning), findsOneWidget);
-    expect(find.byTooltip('Pause'), findsOneWidget);
 
-    await tester.tap(find.byTooltip('Pause'));
-    await tester.pumpAndSettle();
+    await selectInfusionAction(tester, 'Pause');
 
-    expect(find.byTooltip('Resume'), findsOneWidget);
+    await selectInfusionAction(tester, 'Resume');
 
-    await tester.tap(find.byTooltip('Resume'));
-    await tester.pumpAndSettle();
-
-    expect(find.byTooltip('Pause'), findsOneWidget);
-
-    await tester.tap(find.byTooltip('Remove'));
-    await tester.pumpAndSettle();
+    await selectInfusionAction(tester, 'Remove');
     await tester.tap(find.widgetWithText(TextButton, 'Remove'));
     await tester.pumpAndSettle();
 
@@ -775,20 +867,12 @@ void main() {
     await addTimer(tester, title: 'Dextrose');
 
     expect(find.text('Dextrose'), findsOneWidget);
-    expect(find.byTooltip('Pause'), findsOneWidget);
 
-    await tester.tap(find.byTooltip('Pause'));
-    await tester.pumpAndSettle();
+    await selectInfusionAction(tester, 'Pause');
 
-    expect(find.byTooltip('Resume'), findsOneWidget);
+    await selectInfusionAction(tester, 'Resume');
 
-    await tester.tap(find.byTooltip('Resume'));
-    await tester.pumpAndSettle();
-
-    expect(find.byTooltip('Pause'), findsOneWidget);
-
-    await tester.tap(find.byTooltip('Remove'));
-    await tester.pumpAndSettle();
+    await selectInfusionAction(tester, 'Remove');
     await tester.tap(find.widgetWithText(TextButton, 'Remove'));
     await tester.pumpAndSettle();
 

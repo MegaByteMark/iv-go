@@ -226,7 +226,10 @@ class InfusionListController {
     }
 
     for (final timer in currentTimers) {
-      await _notificationService.scheduleMilestonesForTimer(timer);
+      await _notificationService.scheduleMilestonesForTimer(
+        timer,
+        suppressAlreadyDeliveredBeforeEndMilestones: true,
+      );
     }
 
     await saveState();

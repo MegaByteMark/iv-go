@@ -245,6 +245,39 @@ void main() {
       expect(restored.dueNotificationMilestones(milestones: <InfusionNotificationMilestone>[milestone], now: now), isEmpty);
     });
 
+    test('before-end milestones are not due for infusions that never exceed the milestone offset', () {
+      final oneMinuteMilestone = createMilestone(
+        key: 'one_minute_remaining',
+        offset: const Duration(minutes: 1),
+        trigger: InfusionNotificationTrigger.beforeEnd,
+      );
+      final tenMinuteMilestone = createMilestone(
+        key: 'ten_minutes_remaining',
+        offset: const Duration(minutes: 10),
+        trigger: InfusionNotificationTrigger.beforeEnd,
+      );
+      final twoMinuteTimer = createTimer(volume: 6);
+      final tenSecondTimer = createTimer(volume: 0.5);
+
+      twoMinuteTimer.start();
+      tenSecondTimer.start();
+
+      expect(
+        twoMinuteTimer.dueNotificationMilestones(
+          milestones: <InfusionNotificationMilestone>[tenMinuteMilestone],
+          now: now,
+        ),
+        isEmpty,
+      );
+      expect(
+        tenSecondTimer.dueNotificationMilestones(
+          milestones: <InfusionNotificationMilestone>[oneMinuteMilestone],
+          now: now,
+        ),
+        isEmpty,
+      );
+    });
+
     test('acknowledged recovered overdue timers keep after-end suppression after JSON restore', () {
       final timer = createTimer(volume: 6);
       final milestone = createMilestone(

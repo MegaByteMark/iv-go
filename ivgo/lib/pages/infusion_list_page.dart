@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:ivgo/domain/infusion_characteristics.dart';
 import 'package:ivgo/domain/infusion_timer.dart';
 import 'package:ivgo/pages/infusion_list_controller.dart';
@@ -115,26 +116,25 @@ class _InfusionListPageState extends State<InfusionListPage> with WidgetsBinding
               }
 
               return ListView.builder(
+                padding: const EdgeInsets.fromLTRB(12, 8, 12, 16),
                 itemCount: infusionTimers.length,
                 itemBuilder: (context, index) {
                   final timer = infusionTimers[index];
 
-                  return Column(
-                    children: [
-                      InfusionRow(
-                        timer,
-                        onChanged: (_) => unawaited(_controller.handleTimerChanged(timer)),
-                        onRemove: (theTimer) => unawaited(_controller.removeTimer(theTimer)),
-                        onEdit: (theTimer) async {
-                          final InfusionTimer? savedTimer = await _addOrEditTimer(theTimer);
+                  return Padding(
+                    padding: EdgeInsets.only(bottom: index == infusionTimers.length - 1 ? 0 : 8),
+                    child: InfusionRow(
+                      timer,
+                      onChanged: (_) => unawaited(_controller.handleTimerChanged(timer)),
+                      onRemove: (theTimer) => unawaited(_controller.removeTimer(theTimer)),
+                      onEdit: (theTimer) async {
+                        final InfusionTimer? savedTimer = await _addOrEditTimer(theTimer);
 
-                          if (savedTimer == null) {
-                            return;
-                          }
-                        },
-                      ),
-                      const Divider(),
-                    ],
+                        if (savedTimer == null) {
+                          return;
+                        }
+                      },
+                    ),
                   );
                 },
               );
@@ -303,20 +303,38 @@ class _InfusionTimerSheet extends StatefulWidget {
 }
 
 class _InfusionTimerSheetState extends State<_InfusionTimerSheet> with SignalsMixin {
+  static final TextInputFormatter _positiveDecimalInputFormatter = TextInputFormatter.withFunction((
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    final String text = newValue.text;
+
+    if (text.isEmpty || RegExp(r'^\d*\.?\d*$').hasMatch(text)) {
+      return newValue;
+    }
+
+    return oldValue;
+  });
+
   late final _formKey = GlobalKey<FormState>();
+
   late final _autovalidateMode = createSignal<AutovalidateMode>(
     AutovalidateMode.disabled,
     debugLabel: 'infusionTimerSheetAutovalidateMode',
   );
+
   late final _titleController = TextEditingController(
     text: widget.initialTimer?.title ?? '',
   );
+
   late final _volumeController = TextEditingController(
     text: widget.initialTimer?.characteristics.volume.toString() ?? '',
   );
+
   late final _dropFactorController = TextEditingController(
     text: widget.initialTimer?.characteristics.dropFactor.toString() ?? '',
   );
+
   late final _flowRateController = TextEditingController(
     text: widget.initialTimer?.characteristics.flowRate.toString() ?? '',
   );
@@ -330,6 +348,30 @@ class _InfusionTimerSheetState extends State<_InfusionTimerSheet> with SignalsMi
     _dropFactorController.dispose();
     _flowRateController.dispose();
     super.dispose();
+  }
+
+  InputDecoration _inputDecoration(BuildContext context, String labelText) {
+    final ColorScheme colorScheme = Theme.of(context).colorScheme;
+
+    OutlineInputBorder border(Color color, [double width = 1]) {
+      return OutlineInputBorder(
+        borderRadius: BorderRadius.circular(18),
+        borderSide: BorderSide(color: color, width: width),
+      );
+    }
+
+    return InputDecoration(
+      labelText: labelText,
+      filled: true,
+      fillColor: colorScheme.surfaceContainerLowest,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+      border: border(colorScheme.outlineVariant),
+      enabledBorder: border(colorScheme.outlineVariant),
+      focusedBorder: border(colorScheme.primary, 1.5),
+      errorBorder: border(colorScheme.error),
+      focusedErrorBorder: border(colorScheme.error, 1.5),
+      errorMaxLines: 2,
+    );
   }
 
   @override
@@ -360,54 +402,70 @@ class _InfusionTimerSheetState extends State<_InfusionTimerSheet> with SignalsMi
                     const Gap(16),
                     TextFormField(
                       controller: _titleController,
-                      decoration: const InputDecoration(labelText: 'Title'),
+                      decoration: _inputDecoration(context, 'Title'),
                       autofocus: true,
+                      textCapitalization: TextCapitalization.words,
                       textInputAction: TextInputAction.next,
                       validator: widget.titleValidator,
                     ),
                     const Gap(8),
                     TextFormField(
                       controller: _volumeController,
-                      decoration: const InputDecoration(labelText: 'Volume (ml)'),
+                      decoration: _inputDecoration(context, 'Target Volume (ml)'),
                       keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      inputFormatters: <TextInputFormatter>[_positiveDecimalInputFormatter],
                       textInputAction: TextInputAction.next,
-                      validator: (value) => widget.positiveNumberValidator(value, 'volume'),
+                      validator: (value) => widget.positiveNumberValidator(value, 'Target Volume'),
                     ),
                     const Gap(8),
                     TextFormField(
                       controller: _dropFactorController,
-                      decoration: const InputDecoration(
-                        labelText: 'Drop Factor (gtts/ml)',
-                      ),
+                      decoration: _inputDecoration(context, 'Drop Factor (gtts/ml)'),
                       keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      inputFormatters: <TextInputFormatter>[_positiveDecimalInputFormatter],
                       textInputAction: TextInputAction.next,
-                      validator: (value) => widget.positiveNumberValidator(value, 'drop factor'),
+                      validator: (value) => widget.positiveNumberValidator(value, 'Drop Factor'),
                     ),
                     const Gap(8),
                     TextFormField(
                       controller: _flowRateController,
-                      decoration: const InputDecoration(
-                        labelText: 'Flow Rate (gtts/min)',
-                      ),
+                      decoration: _inputDecoration(context, 'Flow Rate (gtts/min)'),
                       keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      inputFormatters: <TextInputFormatter>[_positiveDecimalInputFormatter],
                       textInputAction: TextInputAction.done,
                       onFieldSubmitted: (_) => _submit(),
-                      validator: (value) => widget.positiveNumberValidator(value, 'flow rate'),
+                      validator: (value) => widget.positiveNumberValidator(value, 'Flow Rate'),
                     ),
                     const Gap(16),
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
                       children: <Widget>[
-                        TextButton(
-                          onPressed: () {
-                            Navigator.of(context).pop();
-                          },
-                          child: const Text('Cancel'),
+                        Expanded(
+                          child: OutlinedButton(
+                            style: OutlinedButton.styleFrom(
+                              minimumSize: const Size.fromHeight(56),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(18),
+                              ),
+                            ),
+                            onPressed: () {
+                              Navigator.of(context).pop();
+                            },
+                            child: const Text('Cancel'),
+                          ),
                         ),
-                        const Gap(8),
-                        FilledButton(
-                          onPressed: _submit,
-                          child: Text(_isNewTimer ? 'Add' : 'Save'),
+                        const Gap(12),
+                        Expanded(
+                          flex: 2,
+                          child: FilledButton(
+                            style: FilledButton.styleFrom(
+                              minimumSize: const Size.fromHeight(56),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(18),
+                              ),
+                            ),
+                            onPressed: _submit,
+                            child: Text(_isNewTimer ? 'Add' : 'Save'),
+                          ),
                         ),
                       ],
                     ),

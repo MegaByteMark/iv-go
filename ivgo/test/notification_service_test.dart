@@ -86,7 +86,7 @@ void main() {
           ],
         ),
       );
-      final InfusionTimer timer = createTimer(volume: 6);
+      final InfusionTimer timer = createTimer(volume: 31);
       final InfusionNotificationMilestone tenMinuteMilestone = createMilestone(
         key: 'ten_minutes_remaining',
         title: '10 minutes remaining',
@@ -103,7 +103,7 @@ void main() {
       );
 
       timer.start();
-      now = now.add(const Duration(seconds: 70));
+      now = now.add(const Duration(seconds: 570));
 
       await service.scheduleMilestonesForTimer(timer);
 
@@ -140,6 +140,86 @@ void main() {
       expect(fakeNotificationClient.scheduledNotifications, hasLength(1));
       expect(fakeNotificationClient.scheduledNotifications.single.title, '1 minute remaining');
       expect(fakeNotificationClient.scheduledNotifications.single.body, 'Saline is nearly complete.');
+    });
+
+    test('skips before-end milestones whose offset is not shorter than the infusion duration', () async {
+      final NotificationService service = NotificationService(
+        nowProvider: () => now,
+        notificationClient: fakeNotificationClient,
+        settingsRepository: _FakeNotificationSettingsRepository(
+          <InfusionNotificationMilestone>[
+            createMilestone(
+              key: 'ten_minutes_remaining',
+              title: '10 minutes remaining',
+              body: '{timer_title} has entered the last 10 minutes.',
+              offset: const Duration(minutes: 10),
+              trigger: InfusionNotificationTrigger.beforeEnd,
+            ),
+            createMilestone(
+              key: 'one_minute_remaining',
+              title: '1 minute remaining',
+              body: '{timer_title} is nearly complete.',
+              offset: const Duration(minutes: 1),
+              trigger: InfusionNotificationTrigger.beforeEnd,
+            ),
+          ],
+        ),
+      );
+      final InfusionTimer timer = createTimer(volume: 6);
+
+      timer.start();
+
+      await service.scheduleMilestonesForTimer(timer);
+
+      expect(fakeNotificationClient.shownNotifications, isEmpty);
+      expect(fakeNotificationClient.scheduledNotifications, hasLength(1));
+      expect(fakeNotificationClient.scheduledNotifications.single.title, '1 minute remaining');
+    });
+
+    test('does not re-show a before-end milestone during lifecycle resync after its scheduled notification has fired', () async {
+      final InfusionNotificationMilestone milestone = createMilestone(
+        key: 'one_minute_remaining',
+        title: '1 minute remaining',
+        body: '{timer_title} is nearly complete.',
+        offset: const Duration(minutes: 1),
+        trigger: InfusionNotificationTrigger.beforeEnd,
+      );
+      final NotificationService service = NotificationService(
+        nowProvider: () => now,
+        notificationClient: fakeNotificationClient,
+        settingsRepository: _FakeNotificationSettingsRepository(
+          <InfusionNotificationMilestone>[milestone],
+        ),
+      );
+      final InfusionTimer timer = createTimer(volume: 6);
+
+      timer.start();
+
+      await service.scheduleMilestonesForTimer(timer);
+
+      final ScheduledNotification scheduledNotification = fakeNotificationClient.scheduledNotifications.single;
+
+      fakeNotificationClient.pendingNotifications = <PendingNotificationRequest>[
+        PendingNotificationRequest(
+          scheduledNotification.id,
+          scheduledNotification.title,
+          scheduledNotification.body,
+          scheduledNotification.payload,
+        ),
+      ];
+      fakeNotificationClient.scheduledNotifications.clear();
+
+      now = now.add(const Duration(seconds: 70));
+      fakeNotificationClient.pendingNotifications = <PendingNotificationRequest>[];
+
+      await service.scheduleMilestonesForTimer(
+        timer,
+        suppressAlreadyDeliveredBeforeEndMilestones: true,
+      );
+
+      expect(fakeNotificationClient.shownNotifications, isEmpty);
+      expect(fakeNotificationClient.scheduledNotifications, isEmpty);
+      expect(timer.hasHandledMilestone(milestone), isTrue);
     });
 
     test('replaces dot-notation placeholders in notification templates', () async {

@@ -18,15 +18,18 @@ void main() {
     test('returns default milestones when nothing is stored', () async {
       final List<InfusionNotificationMilestone> milestones = await repository.loadMilestones();
 
-      expect(milestones, hasLength(3));
+      expect(milestones, hasLength(4));
       expect(milestones[0].key, 'one_minute_remaining');
       expect(milestones[0].offset, const Duration(minutes: 1));
       expect(milestones[0].trigger, InfusionNotificationTrigger.beforeEnd);
       expect(milestones[1].key, 'ten_minutes_remaining');
       expect(milestones[1].offset, const Duration(minutes: 10));
-      expect(milestones[2].key, 'ended_plus_ten_minutes');
-      expect(milestones[2].offset, const Duration(minutes: 10));
+      expect(milestones[2].key, 'ended_plus_ten_seconds');
+      expect(milestones[2].offset, const Duration(seconds: 10));
       expect(milestones[2].trigger, InfusionNotificationTrigger.afterEnd);
+      expect(milestones[3].key, 'ended_plus_ten_minutes');
+      expect(milestones[3].offset, const Duration(minutes: 10));
+      expect(milestones[3].trigger, InfusionNotificationTrigger.afterEnd);
     });
 
     test('returns default milestones when shared preferences loading fails', () async {
@@ -38,10 +41,11 @@ void main() {
 
       final List<InfusionNotificationMilestone> milestones = await repository.loadMilestones();
 
-      expect(milestones, hasLength(3));
+      expect(milestones, hasLength(4));
       expect(milestones[0].key, 'one_minute_remaining');
       expect(milestones[1].key, 'ten_minutes_remaining');
-      expect(milestones[2].key, 'ended_plus_ten_minutes');
+      expect(milestones[2].key, 'ended_plus_ten_seconds');
+      expect(milestones[3].key, 'ended_plus_ten_minutes');
     });
 
     test('saves and restores milestones through shared preferences', () async {
@@ -93,10 +97,11 @@ void main() {
 
       final List<InfusionNotificationMilestone> milestones = await repository.loadMilestones();
 
-      expect(milestones, hasLength(3));
+      expect(milestones, hasLength(4));
       expect(milestones[0].key, 'one_minute_remaining');
       expect(milestones[1].key, 'ten_minutes_remaining');
-      expect(milestones[2].key, 'ended_plus_ten_minutes');
+      expect(milestones[2].key, 'ended_plus_ten_seconds');
+      expect(milestones[3].key, 'ended_plus_ten_minutes');
     });
   });
 }

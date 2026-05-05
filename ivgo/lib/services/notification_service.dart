@@ -165,11 +165,24 @@ class NotificationService {
     await sharedPreferences.setBool(_permissionRequestedStorageKey, true);
   }
 
-  Future<void> scheduleMilestonesForTimer(InfusionTimer timer) async {
+  Future<void> scheduleMilestonesForTimer(
+    InfusionTimer timer, {
+    bool suppressAlreadyDeliveredBeforeEndMilestones = false,
+  }) async {
     final DateTime effectiveNow = _nowProvider();
     final List<InfusionNotificationMilestone> milestones = await _settingsRepository.loadMilestones();
+    final List<PendingNotificationRequest> pendingNotifications = await _notificationClient.pendingNotificationRequests();
 
-    await cancelMilestonesForTimer(timer);
+    if (suppressAlreadyDeliveredBeforeEndMilestones) {
+      _markDeliveredBeforeEndMilestonesAsHandled(
+        timer,
+        milestones,
+        pendingNotifications,
+        now: effectiveNow,
+      );
+    }
+
+    await _cancelPendingMilestonesForTimer(timer, pendingNotifications);
 
     final List<InfusionNotificationMilestone> dueMilestones = timer.dueNotificationMilestones(
       now: effectiveNow,
@@ -214,11 +227,54 @@ class NotificationService {
   Future<void> cancelMilestonesForTimer(InfusionTimer timer) async {
     final List<PendingNotificationRequest> pendingNotifications = await _notificationClient.pendingNotificationRequests();
 
+    await _cancelPendingMilestonesForTimer(timer, pendingNotifications);
+  }
+
+  void _markDeliveredBeforeEndMilestonesAsHandled(
+    InfusionTimer timer,
+    Iterable<InfusionNotificationMilestone> milestones,
+    List<PendingNotificationRequest> pendingNotifications, {
+    required DateTime now,
+  }) {
+    final List<InfusionNotificationMilestone> dueMilestones = timer.dueNotificationMilestones(
+      milestones: milestones,
+      now: now,
+    );
+
+    for (final InfusionNotificationMilestone milestone in dueMilestones) {
+      if (milestone.trigger != InfusionNotificationTrigger.beforeEnd) {
+        continue;
+      }
+
+      if (_hasPendingNotificationFor(timer, milestone, pendingNotifications)) {
+        continue;
+      }
+
+      timer.markMilestoneHandled(milestone);
+    }
+  }
+
+  Future<void> _cancelPendingMilestonesForTimer(
+    InfusionTimer timer,
+    List<PendingNotificationRequest> pendingNotifications,
+  ) async {
     for (final pendingNotification in pendingNotifications) {
       if (pendingNotification.payload?.startsWith('${timer.id}:') ?? false) {
         await _notificationClient.cancel(id: pendingNotification.id);
       }
     }
+  }
+
+  bool _hasPendingNotificationFor(
+    InfusionTimer timer,
+    InfusionNotificationMilestone milestone,
+    List<PendingNotificationRequest> pendingNotifications,
+  ) {
+    final String payload = _payloadFor(timer, milestone);
+
+    return pendingNotifications.any(
+      (PendingNotificationRequest pendingNotification) => pendingNotification.payload == payload,
+    );
   }
 
   _CoalescedDueMilestones _coalesceDueMilestones(

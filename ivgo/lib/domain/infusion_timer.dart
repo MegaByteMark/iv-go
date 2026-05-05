@@ -345,6 +345,8 @@ class InfusionTimer {
 
     reconcile(now: now);
 
+    final Duration projectedTotalDuration = _projectedTotalDuration();
+
     for (var milestone in milestones) {
       if (hasHandledMilestone(milestone)) {
         continue;
@@ -353,6 +355,10 @@ class InfusionTimer {
       if (milestone.trigger == InfusionNotificationTrigger.beforeEnd) {
         // Only consider "before end" milestones for currently running infusions that have a known remaining time.
         if (!isRunning || _lastStartedAt == null) {
+          continue;
+        }
+
+        if (projectedTotalDuration <= milestone.offset) {
           continue;
         }
 
@@ -371,6 +377,15 @@ class InfusionTimer {
     }
 
     return dueMilestones;
+  }
+
+  Duration _projectedTotalDuration() {
+    final int elapsedSeconds = _phases.fold<int>(
+      0,
+      (int total, _InfusionPhase phase) => total + phase.elapsedSeconds,
+    );
+
+    return Duration(seconds: elapsedSeconds + remainingSeconds.inSeconds);
   }
 
   bool hasHandledMilestone(InfusionNotificationMilestone milestone) {

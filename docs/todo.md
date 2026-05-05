@@ -88,7 +88,7 @@ Based on review of `copilot-requirements.md` vs current codebase implementation 
 - [x] Do not show the disclaimer again unless app data is cleared
 
 ### Safety Warnings
-- [ ] If notifications are denied or unavailable, clearly warn that background alerting will not function and timers must be monitored in-app
+- [x] If notifications are denied or unavailable, clearly warn that background alerting will not function and timers must be monitored in-app
 - [x] Keep that warning persistently visible in the main timer list until permissions are enabled
 
 ---

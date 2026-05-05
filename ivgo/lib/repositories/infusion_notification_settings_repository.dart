@@ -12,23 +12,29 @@ class InfusionNotificationSettingsRepository {
   static final List<InfusionNotificationMilestone> _defaultMilestones = <InfusionNotificationMilestone>[
     InfusionNotificationMilestone(
       key: 'one_minute_remaining',
-      title: 'One Minute Remaining',
-      body: 'Infusion {timer.title} has 1 minute remaining.',
+      title: 'Less Than One Minute Remaining',
+      body: 'Infusion {timer.title} has less than 1 minute remaining.',
       offset: const Duration(minutes: 1),
       trigger: InfusionNotificationTrigger.beforeEnd,
     ),
     InfusionNotificationMilestone(
       key: 'ten_minutes_remaining',
-      title: '10 Minutes Remaining',
-      body: 'Infusion {timer.title} has 10 minutes remaining.',
+      title: 'Less Than 10 Minutes Remaining',
+      body: 'Infusion {timer.title} has less than 10 minutes remaining.',
       offset: const Duration(minutes: 10),
       trigger: InfusionNotificationTrigger.beforeEnd,
+    ),InfusionNotificationMilestone(
+      key: 'ended_plus_ten_seconds',
+      title: 'Infusion complete',
+      body: 'Infusion {timer.title} has completed.',
+      offset: const Duration(seconds: 10),
+      trigger: InfusionNotificationTrigger.afterEnd,
     ),
     InfusionNotificationMilestone(
       key: 'ended_plus_ten_minutes',
-      title: 'Infusion ended 10 minutes ago',
-      body: 'Infusion {timer.title} ended 10 minutes ago.',
-      offset: Duration(minutes: 10),
+      title: 'Infusion completed 10 minutes ago',
+      body: 'Infusion {timer.title} has completed 10 minutes ago.',
+      offset: const Duration(minutes: 10),
       trigger: InfusionNotificationTrigger.afterEnd,
     ),
   ];

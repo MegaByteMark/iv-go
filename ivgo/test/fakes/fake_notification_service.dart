@@ -33,7 +33,10 @@ class FakeNotificationService extends NotificationService {
   Future<bool> requestExactAlarmPermission() async => exactAlarmPermissionResult;
 
   @override
-  Future<void> scheduleMilestonesForTimer(InfusionTimer timer) async {
+  Future<void> scheduleMilestonesForTimer(
+    InfusionTimer timer, {
+    bool suppressAlreadyDeliveredBeforeEndMilestones = false,
+  }) async {
     scheduledMilestoneCalls += 1;
     scheduledTimerIds.add(timer.id);
   }
