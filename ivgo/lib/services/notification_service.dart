@@ -174,7 +174,7 @@ class NotificationService {
     final List<PendingNotificationRequest> pendingNotifications = await _notificationClient.pendingNotificationRequests();
 
     if (suppressAlreadyDeliveredBeforeEndMilestones) {
-      _markDeliveredBeforeEndMilestonesAsHandled(
+      _markDeliveredScheduledMilestonesAsHandled(
         timer,
         milestones,
         pendingNotifications,
@@ -230,7 +230,7 @@ class NotificationService {
     await _cancelPendingMilestonesForTimer(timer, pendingNotifications);
   }
 
-  void _markDeliveredBeforeEndMilestonesAsHandled(
+  void _markDeliveredScheduledMilestonesAsHandled(
     InfusionTimer timer,
     Iterable<InfusionNotificationMilestone> milestones,
     List<PendingNotificationRequest> pendingNotifications, {
@@ -242,10 +242,6 @@ class NotificationService {
     );
 
     for (final InfusionNotificationMilestone milestone in dueMilestones) {
-      if (milestone.trigger != InfusionNotificationTrigger.beforeEnd) {
-        continue;
-      }
-
       if (_hasPendingNotificationFor(timer, milestone, pendingNotifications)) {
         continue;
       }
@@ -362,8 +358,18 @@ class NotificationService {
       return tz.TZDateTime.from(scheduledAt, tz.local);
     }
 
-    // We should only get here for the afterEnd triggers. Make sure theres a valid timer to notify for.
-    if (!timer.isEnded || timer.isRecoveredOverdue || timer.completedAt == null || timer.suppressAfterEndMilestones) {
+    if (timer.isRecoveredOverdue || timer.suppressAfterEndMilestones) {
+      return null;
+    }
+
+    if (timer.isRunning) {
+      final DateTime scheduledAt = now.add(timer.remainingSeconds + milestone.offset);
+
+      return tz.TZDateTime.from(scheduledAt, tz.local);
+    }
+
+    // We should only get here for the afterEnd triggers. Make sure theres a valid ended timer to notify for.
+    if (!timer.isEnded || timer.completedAt == null) {
       return null;
     }
 

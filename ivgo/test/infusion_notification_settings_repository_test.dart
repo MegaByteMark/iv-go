@@ -24,8 +24,8 @@ void main() {
       expect(milestones[0].trigger, InfusionNotificationTrigger.beforeEnd);
       expect(milestones[1].key, 'ten_minutes_remaining');
       expect(milestones[1].offset, const Duration(minutes: 10));
-      expect(milestones[2].key, 'ended_plus_ten_seconds');
-      expect(milestones[2].offset, const Duration(seconds: 10));
+      expect(milestones[2].key, 'ended_plus_two_seconds');
+      expect(milestones[2].offset, const Duration(seconds: 2));
       expect(milestones[2].trigger, InfusionNotificationTrigger.afterEnd);
       expect(milestones[3].key, 'ended_plus_ten_minutes');
       expect(milestones[3].offset, const Duration(minutes: 10));
@@ -44,7 +44,7 @@ void main() {
       expect(milestones, hasLength(4));
       expect(milestones[0].key, 'one_minute_remaining');
       expect(milestones[1].key, 'ten_minutes_remaining');
-      expect(milestones[2].key, 'ended_plus_ten_seconds');
+      expect(milestones[2].key, 'ended_plus_two_seconds');
       expect(milestones[3].key, 'ended_plus_ten_minutes');
     });
 
@@ -100,7 +100,7 @@ void main() {
       expect(milestones, hasLength(4));
       expect(milestones[0].key, 'one_minute_remaining');
       expect(milestones[1].key, 'ten_minutes_remaining');
-      expect(milestones[2].key, 'ended_plus_ten_seconds');
+      expect(milestones[2].key, 'ended_plus_two_seconds');
       expect(milestones[3].key, 'ended_plus_ten_minutes');
     });
   });

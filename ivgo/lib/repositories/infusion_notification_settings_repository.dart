@@ -24,10 +24,10 @@ class InfusionNotificationSettingsRepository {
       offset: const Duration(minutes: 10),
       trigger: InfusionNotificationTrigger.beforeEnd,
     ),InfusionNotificationMilestone(
-      key: 'ended_plus_ten_seconds',
+      key: 'ended_plus_two_seconds',
       title: 'Infusion complete',
       body: 'Infusion {timer.title} has completed.',
-      offset: const Duration(seconds: 10),
+      offset: const Duration(seconds: 2),
       trigger: InfusionNotificationTrigger.afterEnd,
     ),
     InfusionNotificationMilestone(

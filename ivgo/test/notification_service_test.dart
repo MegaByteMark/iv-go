@@ -176,6 +176,36 @@ void main() {
       expect(fakeNotificationClient.scheduledNotifications.single.title, '1 minute remaining');
     });
 
+    test('schedules after-end milestones ahead of time for running timers', () async {
+      final InfusionNotificationMilestone milestone = createMilestone(
+        key: 'ended_plus_ten_seconds',
+        title: 'Infusion complete',
+        body: '{timer_title} has completed.',
+        offset: const Duration(seconds: 10),
+        trigger: InfusionNotificationTrigger.afterEnd,
+      );
+      final NotificationService service = NotificationService(
+        nowProvider: () => now,
+        notificationClient: fakeNotificationClient,
+        settingsRepository: _FakeNotificationSettingsRepository(
+          <InfusionNotificationMilestone>[milestone],
+        ),
+      );
+      final InfusionTimer timer = createTimer(volume: 6);
+
+      timer.start();
+
+      await service.scheduleMilestonesForTimer(timer);
+
+      expect(fakeNotificationClient.shownNotifications, isEmpty);
+      expect(fakeNotificationClient.scheduledNotifications, hasLength(1));
+      expect(fakeNotificationClient.scheduledNotifications.single.title, 'Infusion complete');
+      expect(
+        fakeNotificationClient.scheduledNotifications.single.scheduledDate,
+        tz.TZDateTime.from(now.add(const Duration(seconds: 130)), tz.local),
+      );
+    });
+
     test('does not re-show a before-end milestone during lifecycle resync after its scheduled notification has fired', () async {
       final InfusionNotificationMilestone milestone = createMilestone(
         key: 'one_minute_remaining',
@@ -210,6 +240,52 @@ void main() {
       fakeNotificationClient.scheduledNotifications.clear();
 
       now = now.add(const Duration(seconds: 70));
+      fakeNotificationClient.pendingNotifications = <PendingNotificationRequest>[];
+
+      await service.scheduleMilestonesForTimer(
+        timer,
+        suppressAlreadyDeliveredBeforeEndMilestones: true,
+      );
+
+      expect(fakeNotificationClient.shownNotifications, isEmpty);
+      expect(fakeNotificationClient.scheduledNotifications, isEmpty);
+      expect(timer.hasHandledMilestone(milestone), isTrue);
+    });
+
+    test('does not re-show an after-end milestone during lifecycle resync after its scheduled notification has fired', () async {
+      final InfusionNotificationMilestone milestone = createMilestone(
+        key: 'ended_plus_ten_seconds',
+        title: 'Infusion complete',
+        body: '{timer_title} has completed.',
+        offset: const Duration(seconds: 10),
+        trigger: InfusionNotificationTrigger.afterEnd,
+      );
+      final NotificationService service = NotificationService(
+        nowProvider: () => now,
+        notificationClient: fakeNotificationClient,
+        settingsRepository: _FakeNotificationSettingsRepository(
+          <InfusionNotificationMilestone>[milestone],
+        ),
+      );
+      final InfusionTimer timer = createTimer(volume: 6);
+
+      timer.start();
+
+      await service.scheduleMilestonesForTimer(timer);
+
+      final ScheduledNotification scheduledNotification = fakeNotificationClient.scheduledNotifications.single;
+
+      fakeNotificationClient.pendingNotifications = <PendingNotificationRequest>[
+        PendingNotificationRequest(
+          scheduledNotification.id,
+          scheduledNotification.title,
+          scheduledNotification.body,
+          scheduledNotification.payload,
+        ),
+      ];
+      fakeNotificationClient.scheduledNotifications.clear();
+
+      now = now.add(const Duration(seconds: 131));
       fakeNotificationClient.pendingNotifications = <PendingNotificationRequest>[];
 
       await service.scheduleMilestonesForTimer(
