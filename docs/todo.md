@@ -129,9 +129,9 @@ Based on review of `copilot-requirements.md` vs current codebase implementation 
 - [ ] Add unit tests for infusion duration and infused-volume calculations
 - [x] Add unit tests for timer lifecycle transitions: start, pause, resume, reset, end, and restore
 - [x] Add tests for persistence round-tripping and restore reconciliation
-- [ ] Add widget tests for add, edit, remove, validation errors, and empty-state behavior
-- [ ] Add widget tests for notification permission and test-notification actions
-- [ ] Add tests covering notification milestone state once notifications are implemented
+- [x] Add widget tests for add, edit, remove, validation errors, and empty-state behavior
+- [x] Add widget tests for notification permission states and actions
+- [x] Add tests covering notification milestone state once notifications are implemented
 
 ### Acceptance Checks
 - [x] Ensure `flutter analyze` passes in `ivgo/`
@@ -142,7 +142,7 @@ Based on review of `copilot-requirements.md` vs current codebase implementation 
 ## Medium Priority: UI, Accessibility, And Product Fit
 
 ### Main List UX
-- [ ] Expand the empty state to guide the user to create their first infusion timer
+- [ ] Create visual on-boarding flow to guide the user to create and manage their first infusion timer
 - [x] Improve at-a-glance status presentation for running, paused, ended, and recovered-overdue timers
 - [x] Add explicit visual treatment for timers that completed while the app was not actively notifying the user
 
@@ -191,9 +191,9 @@ Based on review of `copilot-requirements.md` vs current codebase implementation 
 | Timer lifecycle and restore | Core lifecycle, recovered-overdue highlighting, and acknowledgement flow implemented | Critical |
 | Persistence reliability | Core persistence and restore flow implemented; notification-related recovery still pending | Critical |
 | Notifications | Permission flow, milestone scheduling, lifecycle-aware cancellation, and recovered-timer handling implemented; cleanup and platform validation still pending | Critical |
-| Disclaimer and safety warnings | Not implemented | Critical |
+| Disclaimer and safety warnings | Implemented | Critical |
 | Validation | Basic create/edit validation implemented; mobile UX polish still pending | High |
-| Testing | Core timer and validation coverage added; broader UI coverage still pending | High |
+| Testing | Core timer, notification milestone, and broad widget coverage added; some broader UI and accessibility coverage still pending | High |
 | UI and accessibility refinements | Partially implemented | Medium |
 | Technical debt and service boundaries | Growing and worth addressing before notifications land | Medium |
 

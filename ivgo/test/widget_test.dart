@@ -506,6 +506,36 @@ void main() {
     expect(find.text('6.0 ml'), findsOneWidget);
   });
 
+  testWidgets('editing an existing timer updates the infusion card', (WidgetTester tester) async {
+    final timer = InfusionTimer(
+      1,
+      'Saline',
+      InfusionCharacteristics(volume: 6, dropFactor: 20, flowRate: 60),
+    );
+
+    SharedPreferences.setMockInitialValues(<String, Object>{
+      'hasAcceptedDisclaimer': true,
+      'infusionTimers': <String>[jsonEncode(timer.toJson())],
+    });
+
+    await pumpApp(tester);
+
+    await selectInfusionAction(tester, 'Edit');
+
+    await tester.enterText(find.byType(TextFormField).at(0), 'Dextrose');
+    await tester.enterText(find.byType(TextFormField).at(1), '12');
+    await tester.enterText(find.byType(TextFormField).at(2), '15');
+    await tester.enterText(find.byType(TextFormField).at(3), '30');
+
+    await tester.tap(find.widgetWithText(FilledButton, 'Save'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Dextrose'), findsOneWidget);
+    expect(find.text('Saline'), findsNothing);
+    expect(find.text('12.0 ml'), findsOneWidget);
+    expect(find.text('06:00'), findsOneWidget);
+  });
+
   testWidgets('requests notification permissions from the app bar action', (WidgetTester tester) async {
     await pumpApp(
       tester,
