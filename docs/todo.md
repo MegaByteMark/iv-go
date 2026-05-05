@@ -104,7 +104,7 @@ Based on review of `copilot-requirements.md` vs current codebase implementation 
 ### Form Behavior
 - [x] Decide whether timer title is required and enforce that decision consistently in the form
 - [x] Use a modal bottom-sheet overlay for the add/edit infusion form instead of a centered dialog
-- [ ] Improve data-entry UX for mobile numeric input and validation feedback
+- [x] Improve data-entry UX for mobile numeric input and validation feedback
 
 ---
 
@@ -143,13 +143,14 @@ Based on review of `copilot-requirements.md` vs current codebase implementation 
 
 ### Main List UX
 - [ ] Expand the empty state to guide the user to create their first infusion timer
-- [ ] Improve at-a-glance status presentation for running, paused, ended, and recovered-overdue timers
+- [x] Improve at-a-glance status presentation for running, paused, ended, and recovered-overdue timers
 - [x] Add explicit visual treatment for timers that completed while the app was not actively notifying the user
 
 ### Accessibility
 - [ ] Verify text contrast and progress-indicator contrast
 - [ ] Ensure controls have sufficiently large touch targets for quick clinical use
 - [ ] Verify support for larger text sizes and layout resilience
+- [ ] Support for Dark mode: fixed light, fixed dark or device default setting.
 
 ### Scope And Platform Fit
 - [x] Remove the Flutter web target from the project so unsupported browser deployment is not advertised by the scaffold
@@ -179,6 +180,7 @@ Based on review of `copilot-requirements.md` vs current codebase implementation 
 
 ### DevOps
 - [ ] Implement basic CI/CD for this repository to validate quality of merges into develop and form the basis of good PR's.
+- [ ] Create full manual test plan
 
 ---
 

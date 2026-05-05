@@ -4,7 +4,7 @@ import 'package:ivgo/domain/infusion_notification_trigger.dart';
 import 'package:ivgo/domain/infusion_timer_status.dart';
 
 class InfusionTimer {
-  final InfusionCharacteristics _initialCharacteristics;
+  InfusionCharacteristics _initialCharacteristics;
   final DateTime Function() _nowProvider;
   final List<_InfusionPhase> _phases;
 
@@ -161,6 +161,7 @@ class InfusionTimer {
     }
 
     characteristics = _cloneCharacteristics(newCharacteristics);
+    _initialCharacteristics = _cloneCharacteristics(newCharacteristics);
 
     if (infusedVolume >= characteristics.volume) {
       _markEnded(completedAt: _completedAt ?? now);

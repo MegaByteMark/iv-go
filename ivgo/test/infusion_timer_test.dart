@@ -116,12 +116,13 @@ void main() {
       expect(timer.infusedVolume, closeTo(10, 0.0001));
     });
 
-    test('reset clears progress and restores the initial configuration', () {
+    test('reset clears progress and keeps the latest edited configuration', () {
       final timer = createTimer(volume: 10);
 
       timer.start();
       now = now.add(const Duration(seconds: 40));
       timer.reconcile();
+      timer.stop();
       timer.changeCharacteristics(
         InfusionCharacteristics(volume: 10, dropFactor: 20, flowRate: 120),
       );
@@ -130,10 +131,34 @@ void main() {
 
       expect(timer.isPaused, isTrue);
       expect(timer.infusedVolume, 0);
-      expect(timer.remainingSeconds.inSeconds, 200);
+      expect(timer.remainingSeconds.inSeconds, 100);
       expect(timer.characteristics.volume, 10);
       expect(timer.characteristics.dropFactor, 20);
-      expect(timer.characteristics.flowRate, 60);
+      expect(timer.characteristics.flowRate, 120);
+    });
+
+    test('reset clears progress for completed timers and keeps edited settings', () {
+      final timer = createTimer(volume: 10);
+
+      timer.start();
+      now = now.add(const Duration(seconds: 220));
+      timer.reconcile();
+
+      expect(timer.isEnded, isTrue);
+
+      timer.changeCharacteristics(
+        InfusionCharacteristics(volume: 10, dropFactor: 20, flowRate: 120),
+      );
+
+      timer.reset();
+
+      expect(timer.isPaused, isTrue);
+      expect(timer.isEnded, isFalse);
+      expect(timer.infusedVolume, 0);
+      expect(timer.remainingSeconds.inSeconds, 100);
+      expect(timer.characteristics.volume, 10);
+      expect(timer.characteristics.dropFactor, 20);
+      expect(timer.characteristics.flowRate, 120);
     });
 
     test('running timers restore elapsed real time from persisted state', () {
