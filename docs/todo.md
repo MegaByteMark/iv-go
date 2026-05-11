@@ -112,7 +112,7 @@ Based on review of `copilot-requirements.md` vs current codebase implementation 
 
 ### Reconfiguration Behavior
 - [x] Verify and test that re-configuring a running timer preserves previously infused volume and recalculates only the remaining portion
-- [ ] Verify and test that re-configuring a paused timer preserves current progress and does not introduce elapsed-time drift
+- [x] Verify and test that re-configuring a paused timer preserves current progress and does not introduce elapsed-time drift
 
 ### Reset, Pause, Resume
 - [x] Ensure pause freezes infusion progress until resumed
@@ -126,7 +126,7 @@ Based on review of `copilot-requirements.md` vs current codebase implementation 
 
 ### Automated Tests
 - [x] Replace the default Flutter template widget test with tests that reflect the actual app behavior
-- [ ] Add unit tests for infusion duration and infused-volume calculations
+- [x] Add unit tests for infusion duration and infused-volume calculations
 - [x] Add unit tests for timer lifecycle transitions: start, pause, resume, reset, end, and restore
 - [x] Add tests for persistence round-tripping and restore reconciliation
 - [x] Add widget tests for add, edit, remove, validation errors, and empty-state behavior
