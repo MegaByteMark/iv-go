@@ -161,6 +161,39 @@ void main() {
       expect(timer.characteristics.flowRate, 120);
     });
 
+    test('re-configuring a paused timer preserves progress without elapsed-time drift', () {
+      final timer = createTimer(volume: 10);
+
+      timer.start();
+      now = now.add(const Duration(seconds: 40));
+      timer.reconcile();
+
+      expect(timer.infusedVolume, closeTo(2, 0.0001));
+      expect(timer.remainingSeconds.inSeconds, 160);
+
+      timer.stop();
+      expect(timer.isPaused, isTrue);
+      final infusedAtPause = timer.infusedVolume;
+
+      now = now.add(const Duration(seconds: 60));
+      timer.reconcile();
+
+      expect(timer.infusedVolume, infusedAtPause);
+
+      timer.changeCharacteristics(
+        InfusionCharacteristics(volume: 8, dropFactor: 20, flowRate: 120),
+      );
+
+      expect(timer.isPaused, isTrue);
+      expect(timer.infusedVolume, infusedAtPause);
+
+      now = now.add(const Duration(seconds: 120));
+      timer.reconcile();
+
+      expect(timer.infusedVolume, infusedAtPause);
+      expect(timer.remainingSeconds.inSeconds, 80);
+    });
+
     test('running timers restore elapsed real time from persisted state', () {
       final timer = createTimer(volume: 6);
 
@@ -344,6 +377,81 @@ void main() {
       now = now.add(const Duration(seconds: 15));
 
       expect(() => jsonEncode(timer.toJson()), returnsNormally);
+    });
+
+    group('infusion duration and infused-volume calculations', () {
+      test('duration calculation: 100ml at 20gtts/ml and 60gtts/min equals 2000 seconds', () {
+        final timer = createTimer(volume: 100);
+        expect(timer.durationInSeconds.inSeconds, 2000);
+      });
+
+      test('duration calculation: 50ml at 20gtts/ml and 100gtts/min equals 600 seconds', () {
+        final timer = createTimer(volume: 50, flowRate: 100);
+        expect(timer.durationInSeconds.inSeconds, 600);
+      });
+
+      test('duration calculation: 10ml at 15gtts/ml and 45gtts/min equals 200 seconds', () {
+        final timer = createTimer(volume: 10, dropFactor: 15, flowRate: 45);
+        expect(timer.durationInSeconds.inSeconds, 200);
+      });
+
+      test('duration calculation: zero volume equals zero duration', () {
+        final timer = createTimer(volume: 0);
+        expect(timer.durationInSeconds, Duration.zero);
+      });
+
+      test('infused volume calculation: 60 seconds at 60gtts/min and 20gtts/ml equals 3ml', () {
+        final timer = createTimer(volume: 100, flowRate: 60, dropFactor: 20);
+        timer.start();
+        now = now.add(const Duration(seconds: 60));
+        timer.reconcile();
+        expect(timer.infusedVolume, closeTo(3, 0.0001));
+      });
+
+      test('infused volume calculation: 120 seconds at 120gtts/min and 20gtts/ml equals 12ml', () {
+        final timer = createTimer(volume: 100, flowRate: 120, dropFactor: 20);
+        timer.start();
+        now = now.add(const Duration(seconds: 120));
+        timer.reconcile();
+        expect(timer.infusedVolume, closeTo(12, 0.0001));
+      });
+
+      test('infused volume calculation: 180 seconds at 45gtts/min and 15gtts/ml equals 9ml', () {
+        final timer = createTimer(volume: 100, flowRate: 45, dropFactor: 15);
+        timer.start();
+        now = now.add(const Duration(seconds: 180));
+        timer.reconcile();
+        expect(timer.infusedVolume, closeTo(9, 0.0001));
+      });
+
+      test('remaining seconds calculation: after 50 seconds of a 200 second infusion, 150 seconds remain', () {
+        final timer = createTimer(volume: 100);
+        timer.start();
+        now = now.add(const Duration(seconds: 50));
+        timer.reconcile();
+        expect(timer.remainingSeconds.inSeconds, 1950);
+      });
+
+      test('volume and duration are inversely correct: doubling flow rate halves duration', () {
+        final slowTimer = createTimer(volume: 60, flowRate: 60);
+        final fastTimer = createTimer(volume: 60, flowRate: 120);
+        expect(fastTimer.durationInSeconds.inSeconds, slowTimer.durationInSeconds.inSeconds ~/ 2);
+      });
+
+      test('volume and duration are inversely correct: doubling drop factor doubles duration', () {
+        final smallDrops = createTimer(volume: 60, dropFactor: 20, flowRate: 60);
+        final largeDrops = createTimer(volume: 60, dropFactor: 40, flowRate: 60);
+        expect(largeDrops.durationInSeconds.inSeconds, smallDrops.durationInSeconds.inSeconds * 2);
+      });
+
+      test('infused volume caps at target volume when duration exceeds total infusion time', () {
+        final timer = createTimer(volume: 6);
+        timer.start();
+        now = now.add(const Duration(minutes: 5));
+        timer.reconcile();
+        expect(timer.infusedVolume, closeTo(6, 0.0001));
+        expect(timer.isEnded, isTrue);
+      });
     });
   });
 }
