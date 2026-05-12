@@ -143,6 +143,95 @@ Based on review of `copilot-requirements.md` vs current codebase implementation 
 
 ### Main List UX
 - [ ] Create visual on-boarding flow to guide the user to create and manage their first infusion timer
+
+#### Onboarding Wizard Implementation Plan
+
+##### Phase 1: Extract `TimerCardBase` Shared Component
+- [ ] Create `lib/widgets/timer_card_base.dart` as shared visual foundation
+  - Status badge styling (Running/Paused/Completed/Review) with colors and typography
+  - Metric card design (volume, drop rate, time remaining)
+  - Layout structure: badge row, metrics row, info row
+  - Accepts `InfusionTimer` OR form data as input
+  - No business logic, pure visual component
+- [ ] Refactor `lib/widgets/infusion_row.dart` to use `TimerCardBase`
+  - Inherit from `TimerCardBase` for visual styling
+  - Add action menu button and context menu logic on top
+
+##### Phase 2: Create `FirstLaunchRepository`
+- [ ] Create `lib/repositories/first_launch_repository.dart`
+  - Track whether onboarding wizard has been shown
+  - Interface: `hasSeenOnboarding()` → bool, `setHasSeenOnboarding(bool)` → Future<void>
+  - Use SharedPreferences, same pattern as `DisclaimerAcceptanceRepository`
+
+##### Phase 3: Create `OnboardingWizard` Page
+- [ ] Create `lib/pages/onboarding_wizard.dart`
+  - `PageView` with 5 pages + dot indicators
+  - "Skip" button (top-right) dismisses to main list
+  - "Back" / "Next" navigation (bottom)
+  - Animated field focus on steps 2-4 (field pulses/glows briefly on enter)
+  - Live preview card on step 5
+
+##### Onboarding Wizard Pages
+
+| # | Title | Content |
+|---|-------|---------|
+| 1 | Welcome | App icon, greeting, "Let's set up your first infusion" |
+| 2 | Name Your Infusion | Title field with example, explanation text |
+| 3 | Set Your Target | Volume input (ml), typical range guidance |
+| 4 | Configure Flow Rate | Drop factor + flow rate fields, visual explanation |
+| 5 | Create It! | Live preview card + "Create Timer" button |
+
+- [ ] Implement welcome page (step 1)
+  - Large app icon (120px)
+  - Warm greeting text
+  - "Next" button to proceed
+- [ ] Implement name step (step 2)
+  - Title text field with placeholder example ("IV Infusion #1")
+  - Explanation that title is optional but helpful
+  - Field animation: brief pulse/glow on entry
+- [ ] Implement target volume step (step 3)
+  - Volume input field (ml) with numeric keyboard
+  - Guidance text showing typical volume ranges (e.g., 100-1000ml)
+  - Field animation: brief pulse/glow on entry
+- [ ] Implement flow rate step (step 4)
+  - Drop factor field (gtts/ml)
+  - Flow rate field (gtts/min)
+  - Visual explanation of gtts/min concept
+  - Field animation: brief pulse/glow on entry
+- [ ] Implement create step (step 5)
+  - Live preview card using `TimerCardBase` that updates as user fills fields
+  - "Create Timer" button that creates timer, navigates to main list, sets `hasSeenOnboarding = true`
+  - "Back" button to return to previous step
+
+##### Phase 4: Update App Startup Gate
+- [ ] Modify `lib/main.dart` `_StartupGate` widget
+  - Flow: disclaimer check → onboarding check → main list
+  - New flow:
+    1. Has user accepted disclaimer? → No: show `DisclaimerPage`
+    2. Has seen onboarding? → Yes: show `InfusionListPage`
+    3. Has timers? → Yes: show `InfusionListPage` (user is returning)
+    4. Otherwise: show `OnboardingWizard`
+
+##### Phase 5: Enhance Empty State
+- [ ] Modify empty state in `lib/pages/infusion_list_page.dart`
+  - Add "Get Started" button that re-opens wizard
+  - Add explanatory text: "Create your first infusion timer"
+  - Only shown if user has already completed wizard (skipped or finished)
+
+##### Phase 6: Add Tests
+- [ ] Create `test/onboarding_wizard_test.dart`
+  - Wizard renders all 5 pages
+  - Skip dismisses to main list
+  - Next/Back navigation works
+  - Form validation prevents empty/invalid submissions
+  - "Create Timer" creates timer and navigates
+  - Live preview updates on step 5
+- [ ] Ensure `flutter test` passes
+
+##### Phase 7: Verification
+- [ ] Run `flutter analyze` and address any issues
+- [ ] Run `flutter test` and ensure all tests pass
+- [ ] Manual verification: complete wizard flow, verify timer appears in main list
 - [x] Improve at-a-glance status presentation for running, paused, ended, and recovered-overdue timers
 - [x] Add explicit visual treatment for timers that completed while the app was not actively notifying the user
 
