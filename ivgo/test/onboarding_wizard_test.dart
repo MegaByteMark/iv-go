@@ -8,6 +8,7 @@ import 'package:ivgo/pages/onboarding_wizard.dart';
 import 'package:ivgo/repositories/disclaimer_acceptance_repository.dart';
 import 'package:ivgo/repositories/first_launch_repository.dart';
 import 'package:ivgo/repositories/infusion_timer_repository.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'fakes/fake_disclaimer_acceptance_repository.dart';
 import 'fakes/fake_first_launch_repository.dart';
@@ -32,6 +33,10 @@ class NeverCompletingFirstLaunchRepository extends FirstLaunchRepository {
 }
 
 void main() {
+  setUp(() {
+    SharedPreferences.setMockInitialValues(<String, Object>{});
+  });
+
   Future<void> pumpAppWithOnboarding({
     required WidgetTester tester,
     required DisclaimerAcceptanceRepository disclaimerAcceptanceRepository,
@@ -212,6 +217,46 @@ void main() {
 
       expect(find.text("You're All Set!"), findsOneWidget);
       expect(find.text('Create Infusion Timer'), findsOneWidget);
+    });
+
+    testWidgets('creating the timer completes onboarding and shows the main list', (WidgetTester tester) async {
+      final FakeFirstLaunchRepository firstLaunchRepository = FakeFirstLaunchRepository(initialSeen: false);
+
+      await pumpAppWithOnboarding(
+        tester: tester,
+        disclaimerAcceptanceRepository: FakeDisclaimerAcceptanceRepository(initialAccepted: true),
+        firstLaunchRepository: firstLaunchRepository,
+      );
+
+      await tester.tap(find.text('Next'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.widgetWithText(TextField, 'Infusion Name'), 'Walkthrough Infusion');
+
+      await tester.tap(find.text('Next'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.widgetWithText(TextField, 'Target Volume (ml)'), '250');
+
+      await tester.tap(find.text('Next'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.widgetWithText(TextField, 'Drop Factor (gtts/ml)'), '15');
+      await tester.enterText(find.widgetWithText(TextField, 'Flow Rate (gtts/min)'), '45');
+
+      await tester.tap(find.text('Next'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Next'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Next'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Create Infusion Timer'), findsOneWidget);
+
+      await tester.tap(find.text('Create Infusion Timer'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(OnboardingWizard), findsNothing);
+      expect(find.text('Walkthrough Infusion'), findsOneWidget);
+      expect(find.byTooltip('Add New Infusion'), findsOneWidget);
+      expect(await firstLaunchRepository.hasSeenOnboarding(), isTrue);
     });
   });
 }

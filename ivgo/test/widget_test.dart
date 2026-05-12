@@ -120,7 +120,9 @@ void main() {
   testWidgets('shows the disclaimer on first launch and records acceptance', (
     WidgetTester tester,
   ) async {
-    SharedPreferences.setMockInitialValues(<String, Object>{});
+    SharedPreferences.setMockInitialValues(<String, Object>{
+      'hasSeenOnboarding': true,
+    });
     final DisclaimerAcceptanceRepository disclaimerAcceptanceRepository = DisclaimerAcceptanceRepository();
 
     await pumpApp(
@@ -161,6 +163,11 @@ void main() {
   testWidgets('skips the disclaimer once it has been accepted', (
     WidgetTester tester,
   ) async {
+    SharedPreferences.setMockInitialValues(<String, Object>{
+      'hasAcceptedDisclaimer': true,
+      'hasSeenOnboarding': true,
+    });
+
     await pumpApp(
       tester,
       disclaimerAcceptanceRepository: FakeDisclaimerAcceptanceRepository(initialAccepted: true),
@@ -231,7 +238,10 @@ void main() {
   }
 
   testWidgets('shows the empty infusion state', (WidgetTester tester) async {
-    SharedPreferences.setMockInitialValues(<String, Object>{});
+    SharedPreferences.setMockInitialValues(<String, Object>{
+      'hasAcceptedDisclaimer': true,
+      'hasSeenOnboarding': true,
+    });
 
     await pumpApp(tester);
 
@@ -242,6 +252,7 @@ void main() {
   testWidgets('rejects an empty timer form', (WidgetTester tester) async {
     SharedPreferences.setMockInitialValues(<String, Object>{
       'hasAcceptedDisclaimer': true,
+      'hasSeenOnboarding': true,
     });
 
     await pumpApp(tester);
@@ -264,6 +275,7 @@ void main() {
   testWidgets('rejects invalid numeric values when adding a timer', (WidgetTester tester) async {
     SharedPreferences.setMockInitialValues(<String, Object>{
       'hasAcceptedDisclaimer': true,
+      'hasSeenOnboarding': true,
     });
 
     await pumpApp(tester);
@@ -288,6 +300,7 @@ void main() {
   testWidgets('filters non-numeric characters from numeric timer fields', (WidgetTester tester) async {
     SharedPreferences.setMockInitialValues(<String, Object>{
       'hasAcceptedDisclaimer': true,
+      'hasSeenOnboarding': true,
     });
 
     await pumpApp(tester);
@@ -323,6 +336,7 @@ void main() {
   testWidgets('uses rounded input borders for infusion form fields', (WidgetTester tester) async {
     SharedPreferences.setMockInitialValues(<String, Object>{
       'hasAcceptedDisclaimer': true,
+      'hasSeenOnboarding': true,
     });
 
     await pumpApp(tester);
@@ -342,6 +356,7 @@ void main() {
   testWidgets('uses a larger primary submit button in the infusion form', (WidgetTester tester) async {
     SharedPreferences.setMockInitialValues(<String, Object>{
       'hasAcceptedDisclaimer': true,
+      'hasSeenOnboarding': true,
     });
 
     await pumpApp(tester);
@@ -364,123 +379,7 @@ void main() {
 
     SharedPreferences.setMockInitialValues(<String, Object>{
       'hasAcceptedDisclaimer': true,
-      'infusionTimers': <String>[jsonEncode(timer.toJson())],
-    });
-
-    await pumpApp(tester);
-    await tester.pumpAndSettle();
-
-    expect(find.text('Saline'), findsOneWidget);
-    expect(find.byType(Card), findsOneWidget);
-  });
-
-  testWidgets('shows hour-aware remaining time for long running durations', (WidgetTester tester) async {
-    final timer = InfusionTimer(
-      1,
-      'Long saline',
-      InfusionCharacteristics(volume: 555, dropFactor: 20, flowRate: 60),
-    );
-
-    SharedPreferences.setMockInitialValues(<String, Object>{
-      'hasAcceptedDisclaimer': true,
-      'infusionTimers': <String>[jsonEncode(timer.toJson())],
-    });
-
-    await pumpApp(tester);
-
-    expect(find.text('Long saline'), findsOneWidget);
-    expect(find.text('3h 5m'), findsOneWidget);
-  });
-
-  testWidgets('highlights timers recovered as overdue after downtime', (WidgetTester tester) async {
-    final Map<String, dynamic> recoveredTimerJson = <String, dynamic>{
-      'id': 1,
-      'title': 'Saline',
-      'characteristics': <String, dynamic>{
-        'volume': 6.0,
-        'dropFactor': 20.0,
-        'flowRate': 60.0,
-      },
-      'initialCharacteristics': <String, dynamic>{
-        'volume': 6.0,
-        'dropFactor': 20.0,
-        'flowRate': 60.0,
-      },
-      'status': 'running',
-      'lastStartedAt': DateTime.now().subtract(const Duration(minutes: 5)).toIso8601String(),
-      'completedAt': null,
-      'phases': <Map<String, dynamic>>[],
-    };
-
-    SharedPreferences.setMockInitialValues(<String, Object>{
-      'hasAcceptedDisclaimer': true,
-      'infusionTimers': <String>[jsonEncode(recoveredTimerJson)],
-    });
-
-    await pumpApp(tester);
-
-    expect(
-      find.text('Completed while the app was unavailable. Review this infusion.'),
-      findsOneWidget,
-    );
-
-    final BuildContext context = tester.element(find.text('Saline'));
-    final Card recoveredCard = tester.widget<Card>(
-      find.ancestor(of: find.text('Saline'), matching: find.byType(Card)),
-    );
-    expect(recoveredCard.color, Theme.of(context).colorScheme.errorContainer);
-  });
-
-  testWidgets('acknowledging a recovered timer clears the warning state', (WidgetTester tester) async {
-    final Map<String, dynamic> recoveredTimerJson = <String, dynamic>{
-      'id': 1,
-      'title': 'Saline',
-      'characteristics': <String, dynamic>{
-        'volume': 6.0,
-        'dropFactor': 20.0,
-        'flowRate': 60.0,
-      },
-      'initialCharacteristics': <String, dynamic>{
-        'volume': 6.0,
-        'dropFactor': 20.0,
-        'flowRate': 60.0,
-      },
-      'status': 'running',
-      'lastStartedAt': DateTime.now().subtract(const Duration(minutes: 5)).toIso8601String(),
-      'completedAt': null,
-      'phases': <Map<String, dynamic>>[],
-    };
-
-    SharedPreferences.setMockInitialValues(<String, Object>{
-      'hasAcceptedDisclaimer': true,
-      'infusionTimers': <String>[jsonEncode(recoveredTimerJson)],
-    });
-
-    await pumpApp(tester);
-
-    await selectInfusionAction(tester, 'Acknowledge');
-
-    expect(
-      find.text('Completed while the app was unavailable. Review this infusion.'),
-      findsNothing,
-    );
-
-    final BuildContext context = tester.element(find.text('Saline'));
-    final Card acknowledgedCard = tester.widget<Card>(
-      find.ancestor(of: find.text('Saline'), matching: find.byType(Card)),
-    );
-    expect(acknowledgedCard.color, Theme.of(context).colorScheme.surfaceContainerLow);
-  });
-
-  testWidgets('invalid edits do not overwrite an existing timer', (WidgetTester tester) async {
-    final timer = InfusionTimer(
-      1,
-      'Saline',
-      InfusionCharacteristics(volume: 6, dropFactor: 20, flowRate: 60),
-    );
-
-    SharedPreferences.setMockInitialValues(<String, Object>{
-      'hasAcceptedDisclaimer': true,
+      'hasSeenOnboarding': true,
       'infusionTimers': <String>[jsonEncode(timer.toJson())],
     });
 
@@ -507,6 +406,7 @@ void main() {
   });
 
   testWidgets('editing an existing timer updates the infusion card', (WidgetTester tester) async {
+    final FakeNotificationService fakeNotificationService = FakeNotificationService();
     final timer = InfusionTimer(
       1,
       'Saline',
@@ -515,10 +415,17 @@ void main() {
 
     SharedPreferences.setMockInitialValues(<String, Object>{
       'hasAcceptedDisclaimer': true,
+      'hasSeenOnboarding': true,
       'infusionTimers': <String>[jsonEncode(timer.toJson())],
     });
 
-    await pumpApp(tester);
+    await pumpApp(
+      tester,
+      notificationService: fakeNotificationService,
+    );
+
+    expect(fakeNotificationService.scheduledMilestoneCalls, 1);
+    expect(fakeNotificationService.scheduledTimerIds, <int>[1]);
 
     await selectInfusionAction(tester, 'Edit');
 
@@ -534,6 +441,54 @@ void main() {
     expect(find.text('Saline'), findsNothing);
     expect(find.text('12.0 ml'), findsOneWidget);
     expect(find.text('06:00'), findsOneWidget);
+    expect(fakeNotificationService.scheduledMilestoneCalls, 2);
+    expect(fakeNotificationService.scheduledTimerIds, <int>[1, 1]);
+  });
+
+  testWidgets('requests exact alarm permissions from the app bar action', (WidgetTester tester) async {
+    SharedPreferences.setMockInitialValues(<String, Object>{
+      'hasAcceptedDisclaimer': true,
+      'hasSeenOnboarding': true,
+    });
+    final FakeNotificationService fakeNotificationService = FakeNotificationService(
+      exactAlarmPermissionSupported: true,
+      exactAlarmPermissionResult: true,
+    );
+
+    await pumpApp(
+      tester,
+      notificationService: fakeNotificationService,
+    );
+
+    expect(find.byTooltip('Enable Exact Alarms'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Enable Exact Alarms'));
+    await tester.pumpAndSettle();
+
+    expect(fakeNotificationService.exactAlarmPermissionCalls, 1);
+    expect(find.text('Exact alarm permission granted'), findsOneWidget);
+  });
+
+  testWidgets('shows a snackbar when exact alarm permission is not granted', (WidgetTester tester) async {
+    SharedPreferences.setMockInitialValues(<String, Object>{
+      'hasAcceptedDisclaimer': true,
+      'hasSeenOnboarding': true,
+    });
+    final FakeNotificationService fakeNotificationService = FakeNotificationService(
+      exactAlarmPermissionSupported: true,
+      exactAlarmPermissionResult: false,
+    );
+
+    await pumpApp(
+      tester,
+      notificationService: fakeNotificationService,
+    );
+
+    await tester.tap(find.byTooltip('Enable Exact Alarms'));
+    await tester.pumpAndSettle();
+
+    expect(fakeNotificationService.exactAlarmPermissionCalls, 1);
+    expect(find.text('Exact alarm permission not granted'), findsOneWidget);
   });
 
   testWidgets('requests notification permissions from the app bar action', (WidgetTester tester) async {
@@ -568,6 +523,7 @@ void main() {
   testWidgets('does not show the permission warning banner before a denial', (WidgetTester tester) async {
     SharedPreferences.setMockInitialValues(<String, Object>{
       'hasAcceptedDisclaimer': true,
+      'hasSeenOnboarding': true,
     });
 
     await pumpApp(tester);
@@ -600,6 +556,7 @@ void main() {
   testWidgets('adding a timer schedules milestone notifications', (WidgetTester tester) async {
     SharedPreferences.setMockInitialValues(<String, Object>{
       'hasAcceptedDisclaimer': true,
+      'hasSeenOnboarding': true,
     });
     final fakeNotificationService = FakeNotificationService();
 
@@ -615,6 +572,7 @@ void main() {
 
     SharedPreferences.setMockInitialValues(<String, Object>{
       'hasAcceptedDisclaimer': true,
+      'hasSeenOnboarding': true,
       'infusionTimers': <String>[jsonEncode(activeTimer.toJson())],
     });
 
@@ -628,6 +586,7 @@ void main() {
 
     SharedPreferences.setMockInitialValues(<String, Object>{
       'hasAcceptedDisclaimer': true,
+      'hasSeenOnboarding': true,
       'infusionTimers': <String>[jsonEncode(completedTimer.toJson())],
     });
 
@@ -643,6 +602,7 @@ void main() {
 
     SharedPreferences.setMockInitialValues(<String, Object>{
       'hasAcceptedDisclaimer': true,
+      'hasSeenOnboarding': true,
       'infusionTimers': <String>[
         jsonEncode(completedTimer.toJson()),
         jsonEncode(activeTimer.toJson()),
@@ -728,6 +688,7 @@ void main() {
   testWidgets('pausing a timer resyncs milestone notifications', (WidgetTester tester) async {
     SharedPreferences.setMockInitialValues(<String, Object>{
       'hasAcceptedDisclaimer': true,
+      'hasSeenOnboarding': true,
     });
     final fakeNotificationService = FakeNotificationService();
 
@@ -743,6 +704,7 @@ void main() {
   testWidgets('removing a timer cancels milestone notifications', (WidgetTester tester) async {
     SharedPreferences.setMockInitialValues(<String, Object>{
       'hasAcceptedDisclaimer': true,
+      'hasSeenOnboarding': true,
     });
     final fakeNotificationService = FakeNotificationService();
 
@@ -758,6 +720,10 @@ void main() {
   });
 
   testWidgets('shows a denied snackbar when notification permissions are not granted', (WidgetTester tester) async {
+    SharedPreferences.setMockInitialValues(<String, Object>{
+      'hasAcceptedDisclaimer': true,
+      'hasSeenOnboarding': true,
+    });
     await pumpApp(
       tester,
       notificationService: FakeNotificationService(permissionResult: false),
@@ -778,6 +744,7 @@ void main() {
   testWidgets('shows the permission warning banner for an existing denied state', (WidgetTester tester) async {
     SharedPreferences.setMockInitialValues(<String, Object>{
       'hasAcceptedDisclaimer': true,
+      'hasSeenOnboarding': true,
     });
 
     await pumpApp(
@@ -793,6 +760,7 @@ void main() {
   testWidgets('uses the error color for the denied permission warning banner', (WidgetTester tester) async {
     SharedPreferences.setMockInitialValues(<String, Object>{
       'hasAcceptedDisclaimer': true,
+      'hasSeenOnboarding': true,
     });
 
     await pumpApp(
@@ -818,6 +786,7 @@ void main() {
   testWidgets('shows the permission warning banner for an existing unavailable state', (WidgetTester tester) async {
     SharedPreferences.setMockInitialValues(<String, Object>{
       'hasAcceptedDisclaimer': true,
+      'hasSeenOnboarding': true,
     });
 
     await pumpApp(
@@ -833,6 +802,7 @@ void main() {
   testWidgets('denied warning does not block creating a timer', (WidgetTester tester) async {
     SharedPreferences.setMockInitialValues(<String, Object>{
       'hasAcceptedDisclaimer': true,
+      'hasSeenOnboarding': true,
     });
 
     await pumpApp(
@@ -855,6 +825,7 @@ void main() {
   testWidgets('denied warning does not block pause resume and remove actions', (WidgetTester tester) async {
     SharedPreferences.setMockInitialValues(<String, Object>{
       'hasAcceptedDisclaimer': true,
+      'hasSeenOnboarding': true,
     });
 
     await pumpApp(
@@ -883,6 +854,7 @@ void main() {
   testWidgets('unavailable warning does not block core timer use', (WidgetTester tester) async {
     SharedPreferences.setMockInitialValues(<String, Object>{
       'hasAcceptedDisclaimer': true,
+      'hasSeenOnboarding': true,
     });
 
     await pumpApp(

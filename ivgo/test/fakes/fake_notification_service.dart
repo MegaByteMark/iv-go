@@ -1,11 +1,13 @@
 import 'package:ivgo/services/notification_service.dart';
 import 'package:ivgo/services/notification_permission_status.dart';
 import 'package:ivgo/domain/infusion_timer.dart';
+import 'package:timezone/data/latest.dart' as tz_data;
 
 class FakeNotificationService extends NotificationService {
   FakeNotificationService({
     this.permissionResult = true,
     this.exactAlarmPermissionResult = true,
+    this.exactAlarmPermissionSupported = false,
     NotificationPermissionStatus initialPermissionStatus = NotificationPermissionStatus.notDetermined,
   }) {
     setPermissionStatus(initialPermissionStatus);
@@ -13,13 +15,22 @@ class FakeNotificationService extends NotificationService {
 
   final bool permissionResult;
   final bool exactAlarmPermissionResult;
+  final bool exactAlarmPermissionSupported;
   int scheduledMilestoneCalls = 0;
   int cancelledMilestoneCalls = 0;
+  int exactAlarmPermissionCalls = 0;
   final List<int> scheduledTimerIds = <int>[];
   final List<int> cancelledTimerIds = <int>[];
 
   @override
-  Future<void> initialize() async {}
+  bool get supportsExactAlarmPermissionRequest {
+    return exactAlarmPermissionSupported || super.supportsExactAlarmPermissionRequest;
+  }
+
+  @override
+  Future<void> initialize() async {
+    tz_data.initializeTimeZones();
+  }
 
   @override
   Future<bool> requestPermissions() async {
@@ -30,7 +41,15 @@ class FakeNotificationService extends NotificationService {
   }
 
   @override
-  Future<bool> requestExactAlarmPermission() async => exactAlarmPermissionResult;
+  Future<bool> requestExactAlarmPermission() async {
+    exactAlarmPermissionCalls += 1;
+    return exactAlarmPermissionResult;
+  }
+
+  @override
+  Future<NotificationPermissionStatus> refreshPermissionStatus() async {
+    return permissionStatus.value;
+  }
 
   @override
   Future<void> scheduleMilestonesForTimer(

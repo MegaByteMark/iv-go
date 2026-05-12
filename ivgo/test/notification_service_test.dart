@@ -57,7 +57,11 @@ void main() {
     setUp(() {
       SharedPreferences.setMockInitialValues(<String, Object>{});
       tz.initializeTimeZones();
-      tz.setLocalLocation(tz.getLocation('UTC'));
+      try {
+        tz.setLocalLocation(tz.getLocation('UTC'));
+      } catch (_) {
+        tz.setLocalLocation(tz.getLocation('America/Los_Angeles'));
+      }
 
       now = DateTime.utc(2026, 4, 9, 12);
       fakeNotificationClient = FakeNotificationClient();
@@ -433,6 +437,45 @@ void main() {
       expect(granted, isTrue);
       expect(service.permissionStatus.value, NotificationPermissionStatus.granted);
       expect(fakeNotificationClient.requestPermissionsCallCount, 1);
+    });
+
+    test('requestExactAlarmPermission is a no-op on non-Android platforms', () async {
+      final NotificationService service = NotificationService(
+        nowProvider: () => now,
+        notificationClient: fakeNotificationClient,
+        settingsRepository: _FakeNotificationSettingsRepository(
+          const <InfusionNotificationMilestone>[],
+        ),
+        targetPlatform: TargetPlatform.macOS,
+      );
+
+      expect(service.supportsExactAlarmPermissionRequest, isFalse);
+
+      final bool granted = await service.requestExactAlarmPermission();
+
+      expect(granted, isTrue);
+    });
+
+    test('supportsExactAlarmPermissionRequest on Android only', () {
+      final NotificationService androidService = NotificationService(
+        nowProvider: () => now,
+        notificationClient: fakeNotificationClient,
+        settingsRepository: _FakeNotificationSettingsRepository(
+          const <InfusionNotificationMilestone>[],
+        ),
+        targetPlatform: TargetPlatform.android,
+      );
+      final NotificationService service = NotificationService(
+        nowProvider: () => now,
+        notificationClient: fakeNotificationClient,
+        settingsRepository: _FakeNotificationSettingsRepository(
+          const <InfusionNotificationMilestone>[],
+        ),
+        targetPlatform: TargetPlatform.iOS,
+      );
+
+      expect(androidService.supportsExactAlarmPermissionRequest, isTrue);
+      expect(service.supportsExactAlarmPermissionRequest, isFalse);
     });
 
     test('cancels only pending notifications for the specified timer id', () async {

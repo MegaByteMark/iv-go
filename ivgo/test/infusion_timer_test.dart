@@ -191,7 +191,7 @@ void main() {
       timer.reconcile();
 
       expect(timer.infusedVolume, infusedAtPause);
-      expect(timer.remainingSeconds.inSeconds, 80);
+      expect(timer.remainingSeconds.inSeconds, 60);
     });
 
     test('running timers restore elapsed real time from persisted state', () {

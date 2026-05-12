@@ -3,6 +3,9 @@ import 'package:ivgo/domain/infusion_characteristics.dart';
 import 'package:ivgo/pages/infusion_list_controller.dart';
 import 'package:ivgo/services/notification_permission_status.dart';
 import 'package:ivgo/services/notification_service.dart';
+import 'package:ivgo/widgets/onboarding/wizard_navigation_button.dart';
+import 'package:ivgo/widgets/onboarding/wizard_info_text.dart';
+import 'package:ivgo/widgets/onboarding/wizard_page_indicator.dart';
 import 'package:ivgo/widgets/timer_card_base.dart';
 
 class OnboardingWizard extends StatefulWidget {
@@ -111,6 +114,7 @@ class _OnboardingWizardState extends State<OnboardingWizard> {
     setState(() {
       _currentPage = page;
     });
+
     _animateFieldIfNeeded(page);
 
     if (page == 4) {
@@ -120,6 +124,7 @@ class _OnboardingWizardState extends State<OnboardingWizard> {
 
   Future<void> _refreshNotificationStatus() async {
     await widget.notificationService.refreshPermissionStatus();
+
     if (mounted) {
       setState(() {
         _notificationStatus = widget.notificationService.permissionStatus.value;
@@ -132,21 +137,25 @@ class _OnboardingWizardState extends State<OnboardingWizard> {
   void _animateFieldIfNeeded(int page) {
     if (page == 1 && !_titleFieldAnimated) {
       _titleFieldAnimated = true;
+
       Future.delayed(const Duration(milliseconds: 300), () {
         if (mounted) _titleFocus.requestFocus();
       });
     } else if (page == 2 && !_volumeFieldAnimated) {
       _volumeFieldAnimated = true;
+
       Future.delayed(const Duration(milliseconds: 300), () {
         if (mounted) _volumeFocus.requestFocus();
       });
     } else if (page == 3 && !_dropFactorFieldAnimated) {
       _dropFactorFieldAnimated = true;
+
       Future.delayed(const Duration(milliseconds: 300), () {
         if (mounted) _dropFactorFocus.requestFocus();
       });
     } else if (page == 4 && !_flowRateFieldAnimated) {
       _flowRateFieldAnimated = true;
+
       Future.delayed(const Duration(milliseconds: 300), () {
         if (mounted) _flowRateFocus.requestFocus();
       });
@@ -180,7 +189,7 @@ class _OnboardingWizardState extends State<OnboardingWizard> {
                 ),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 48),
+          const SizedBox(height: 24),
           Text(
             'Track your IV infusions with precision and ease',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -208,12 +217,7 @@ class _OnboardingWizardState extends State<OnboardingWizard> {
             onChanged: (_) => setState(() {}),
           ),
           const SizedBox(height: 16),
-          Text(
-            'The title helps you identify this infusion among others.',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-          ),
+          WizardInfoText(label: 'The title helps you identify this infusion among others.'),
         ],
       ),
     );
@@ -235,31 +239,7 @@ class _OnboardingWizardState extends State<OnboardingWizard> {
             onChanged: (_) => setState(() {}),
           ),
           const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surfaceContainerHighest,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Row(
-              children: <Widget>[
-                Icon(
-                  Icons.info_outline,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  size: 20,
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    'Typical volumes range from 100ml to 1000ml depending on the treatment.',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                  ),
-                ),
-              ],
-            ),
-          ),
+          WizardInfoText(label: 'Typical volumes range from 100ml to 1000ml depending on the treatment.'),
         ],
       ),
     );
@@ -290,29 +270,12 @@ class _OnboardingWizardState extends State<OnboardingWizard> {
             onChanged: (_) => setState(() {}),
           ),
           const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surfaceContainerHighest,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Row(
-              children: <Widget>[
-                Icon(
-                  Icons.lightbulb_outline,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  size: 20,
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    'gtts/min (drops per minute) determines how fast the fluid flows. Check your IV set for the drop factor.',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                  ),
-                ),
-              ],
+          WizardInfoText(
+            label: 'gtts/min (drops per minute) determines how fast the fluid flows. Check your IV set for the drop factor.',
+            icon: Icon(
+              Icons.lightbulb_outline,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+              size: 20,
             ),
           ),
         ],
@@ -356,67 +319,30 @@ class _OnboardingWizardState extends State<OnboardingWizard> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Icon(
-                      Icons.info_outline,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                WizardInfoText(label: 'Enable notifications to receive alerts when your timer reaches important milestones.'),
+                if (_notificationGranted) ...<Widget>[
+                  WizardInfoText(
+                    label: 'Notifications enabled! You\'ll receive milestone alerts even when the app is closed.',
+                    color: Theme.of(context).colorScheme.primary,
+                    icon: Icon(
+                      Icons.check_circle,
+                      color: Theme.of(context).colorScheme.primary,
                       size: 20,
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        'Enable notifications to receive alerts when your timer reaches important milestones.',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: Theme.of(context).colorScheme.onSurfaceVariant,
-                            ),
-                      ),
-                    ),
-                  ],
-                ),
-                if (_notificationGranted) ...<Widget>[
-                  const SizedBox(height: 16),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      Icon(
-                        Icons.check_circle,
-                        color: Theme.of(context).colorScheme.primary,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          'Notifications enabled! You\'ll receive milestone alerts even when the app is closed.',
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                color: Theme.of(context).colorScheme.primary,
-                              ),
-                        ),
-                      ),
-                    ],
                   ),
                 ],
                 if (_notificationStatus == NotificationPermissionStatus.denied) ...<Widget>[
-                  const SizedBox(height: 16),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      Icon(
-                        Icons.warning_outlined,
-                        color: Theme.of(context).colorScheme.error,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          'Notifications are turned off. The app will still work, but you\'ll need to keep it open to monitor your timer.',
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                color: Theme.of(context).colorScheme.error,
-                              ),
-                        ),
-                      ),
-                    ],
+                  WizardInfoText(
+                    label: 'Notifications are turned off. Background alerts will not function. Re-enable notifications in system settings and monitor timers in-app until alerts are restored.',
+                    color: Theme.of(context).colorScheme.error,
+                    icon: Icon(Icons.warning_amber_outlined, color: Theme.of(context).colorScheme.error, size: 20),
+                  ),
+                ],
+                if (_notificationStatus == NotificationPermissionStatus.unavailable) ...<Widget>[
+                  WizardInfoText(
+                    label: 'Notifications are unavailable on this device or platform. Background alerts will not function. Monitor timers in-app.',
+                    color: Theme.of(context).colorScheme.error,
+                    icon: Icon(Icons.warning_amber_outlined, color: Theme.of(context).colorScheme.error, size: 20),
                   ),
                 ],
               ],
@@ -509,14 +435,8 @@ class _OnboardingWizardState extends State<OnboardingWizard> {
                   fontWeight: FontWeight.bold,
                 ),
           ),
-          const SizedBox(height: 8),
-          Text(
-            'Tap the menu (⋮) on any timer to edit, pause, or remove it',
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-            textAlign: TextAlign.center,
-          ),
+          const SizedBox(height: 32),
+          WizardInfoText(label: 'Tap the menu (⋮) on any timer to edit, pause, or remove it'),
         ],
       ),
     );
@@ -562,18 +482,8 @@ class _OnboardingWizardState extends State<OnboardingWizard> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: List<Widget>.generate(7, (int index) {
           final bool isActive = index == _currentPage;
-          return AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            margin: const EdgeInsets.symmetric(horizontal: 4),
-            width: isActive ? 24 : 8,
-            height: 8,
-            decoration: BoxDecoration(
-              color: isActive
-                  ? Theme.of(context).colorScheme.primary
-                  : Theme.of(context).colorScheme.surfaceContainerHighest,
-              borderRadius: BorderRadius.circular(4),
-            ),
-          );
+
+          return WizardPageIndicator(isActive: isActive, context: context);
         }),
       ),
     );
@@ -587,38 +497,10 @@ class _OnboardingWizardState extends State<OnboardingWizard> {
       padding: const EdgeInsets.all(16),
       child: Row(
         children: <Widget>[
-          if (canGoBack)
-            Expanded(
-              child: OutlinedButton(
-                onPressed: _goBack,
-                style: OutlinedButton.styleFrom(
-                  minimumSize: const Size(0, 56),
-                ),
-                child: const Text('Back'),
-              ),
-            ),
+          if (canGoBack) WizardNavigationButton(label: 'Back', onPressed: _goBack, filled: false),
           if (canGoBack) const SizedBox(width: 16),
-          if (!isLastPage)
-            Expanded(
-              flex: canGoBack ? 1 : 2,
-              child: FilledButton(
-                onPressed: _goNext,
-                style: FilledButton.styleFrom(
-                  minimumSize: const Size(0, 56),
-                ),
-                child: const Text('Next'),
-              ),
-            ),
-          if (isLastPage)
-            Expanded(
-              child: FilledButton(
-                onPressed: _createTimer,
-                style: FilledButton.styleFrom(
-                  minimumSize: const Size(double.infinity, 56),
-                ),
-                child: const Text('Create Infusion Timer'),
-              ),
-            ),
+          if (!isLastPage) WizardNavigationButton(label: 'Next', onPressed: _goNext, flex: canGoBack ? 1 : 2),
+          if (isLastPage) WizardNavigationButton(label: 'Create Infusion Timer', onPressed: _createTimer),
         ],
       ),
     );
@@ -634,7 +516,18 @@ class _OnboardingWizardState extends State<OnboardingWizard> {
   }
 
   void _goNext() {
-    if (_currentPage < 6 && _validateCurrentPage()) {
+    if (!_validateCurrentPage()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please fill out the required fields to continue.'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+
+      return;
+    }
+
+    if (_currentPage < 6) {
       _pageController.nextPage(
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
@@ -648,13 +541,13 @@ class _OnboardingWizardState extends State<OnboardingWizard> {
         return _titleController.text.trim().isNotEmpty;
       case 2:
         final volume = double.tryParse(_volumeController.text);
+
         return volume != null && volume > 0;
       case 3:
         final dropFactor = double.tryParse(_dropFactorController.text);
         final flowRate = double.tryParse(_flowRateController.text);
+
         return dropFactor != null && dropFactor > 0 && flowRate != null && flowRate > 0;
-      case 4:
-        return true;
       default:
         return true;
     }
@@ -704,8 +597,7 @@ class _AnimatedTextField extends StatefulWidget {
   State<_AnimatedTextField> createState() => _AnimatedTextFieldState();
 }
 
-class _AnimatedTextFieldState extends State<_AnimatedTextField>
-    with SingleTickerProviderStateMixin {
+class _AnimatedTextFieldState extends State<_AnimatedTextField> with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _scaleAnimation;
   late Animation<double> _opacityAnimation;
@@ -724,8 +616,7 @@ class _AnimatedTextFieldState extends State<_AnimatedTextField>
 
     _opacityAnimation = TweenSequence<double>([
       TweenSequenceItem(
-        tween: Tween<double>(begin: 0.0, end: 1.0)
-            .chain(CurveTween(curve: Curves.easeOut)),
+        tween: Tween<double>(begin: 0.0, end: 1.0).chain(CurveTween(curve: Curves.easeOut)),
         weight: 50,
       ),
       TweenSequenceItem(
