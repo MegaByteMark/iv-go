@@ -179,7 +179,8 @@ Based on review of `copilot-requirements.md` vs current codebase implementation 
 | 2 | Name Your Infusion | Title field with example, explanation text |
 | 3 | Set Your Target | Volume input (ml), typical range guidance |
 | 4 | Configure Flow Rate | Drop factor + flow rate fields, visual explanation |
-| 5 | Create It! | Live preview card + "Create Timer" button |
+| 5 | Create It! | Live preview card with menu hint + "Next" |
+| 6 | You're All Set! | "Create Timer" button to finish |
 
 - [x] Implement welcome page (step 1)
   - Large app icon (120px)
@@ -200,7 +201,11 @@ Based on review of `copilot-requirements.md` vs current codebase implementation 
   - Field animation: brief pulse/glow on entry
 - [x] Implement create step (step 5)
   - Live preview card using `TimerCardBase` that updates as user fills fields
-  - "Create Timer" button that creates timer, navigates to main list, sets `hasSeenOnboarding = true`
+  - "Back" button to return to previous step
+- [x] Implement menu options step (step 6)
+  - Shows timer card with menu icon hint (⋮)
+  - Lists available overflow menu options: Edit, Pause/Resume, Remove
+  - "Create Timer" button that creates timer and navigates to main list
   - "Back" button to return to previous step
 
 ##### Phase 4: Update App Startup Gate
@@ -217,15 +222,19 @@ Based on review of `copilot-requirements.md` vs current codebase implementation 
   - Add "Get Started" button that re-opens wizard
   - Add explanatory text: "Create your first infusion timer"
   - Only shown if user has already completed wizard (skipped or finished)
+- [x] Add settings page accessible from app bar gear icon
+  - Replay Walkthrough option to reset onboarding state
+  - Dark Mode toggle (disabled with "coming soon" note)
 
 ##### Phase 6: Add Tests
 - [x] Create `test/onboarding_wizard_test.dart`
-  - Wizard renders all 5 pages
+  - Wizard renders all 6 pages
   - Skip dismisses to main list
   - Next/Back navigation works
   - Form validation prevents empty/invalid submissions
   - "Create Timer" button is present on final step
   - Live preview updates on step 5
+  - Menu page shows overflow menu options
 - [x] Ensure `flutter test` passes for onboarding tests
 
 ##### Phase 7: Verification
@@ -239,6 +248,11 @@ Based on review of `copilot-requirements.md` vs current codebase implementation 
 - [ ] Ensure controls have sufficiently large touch targets for quick clinical use
 - [ ] Verify support for larger text sizes and layout resilience
 - [ ] Support for Dark mode: fixed light, fixed dark or device default setting.
+
+### Settings
+- [x] Add settings page accessible from main list app bar
+- [x] Replay Walkthrough option to reset onboarding state and show wizard on next launch
+- [x] Dark Mode toggle (disabled with "coming soon" note until implemented)
 
 ### Scope And Platform Fit
 - [x] Remove the Flutter web target from the project so unsupported browser deployment is not advertised by the scaffold

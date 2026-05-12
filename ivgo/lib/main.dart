@@ -122,6 +122,7 @@ class _StartupGateState extends State<_StartupGate> {
     return InfusionListPage(
       title: 'Active Infusions',
       notificationService: widget.notificationService,
+      firstLaunchRepository: widget.firstLaunchRepository,
       infusionListController: _infusionListController,
     );
   }

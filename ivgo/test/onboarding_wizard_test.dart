@@ -54,7 +54,7 @@ void main() {
   }
 
   group('Onboarding Wizard', () {
-    testWidgets('renders all 5 pages', (WidgetTester tester) async {
+    testWidgets('renders all 6 pages', (WidgetTester tester) async {
       await pumpAppWithOnboarding(
         tester: tester,
         disclaimerAcceptanceRepository: FakeDisclaimerAcceptanceRepository(initialAccepted: true),
@@ -80,6 +80,10 @@ void main() {
       await tester.tap(find.text('Next'));
       await tester.pumpAndSettle();
       expect(find.text('Create It!'), findsOneWidget);
+
+      await tester.tap(find.text('Next'));
+      await tester.pumpAndSettle();
+      expect(find.text("You're All Set!"), findsOneWidget);
     });
 
     testWidgets('skip dismisses to main list', (WidgetTester tester) async {
@@ -181,23 +185,19 @@ void main() {
       expect(find.text('Test Infusion'), findsOneWidget);
     });
 
-    testWidgets('create timer button is present on final step', (WidgetTester tester) async {
+    testWidgets('final page shows create timer button', (WidgetTester tester) async {
       await pumpAppWithOnboarding(
         tester: tester,
         disclaimerAcceptanceRepository: FakeDisclaimerAcceptanceRepository(initialAccepted: true),
         firstLaunchRepository: FakeFirstLaunchRepository(initialSeen: false),
       );
 
-      await tester.tap(find.text('Next'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Next'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Next'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Next'));
-      await tester.pumpAndSettle();
+      for (int i = 0; i < 5; i++) {
+        await tester.tap(find.text('Next'));
+        await tester.pumpAndSettle();
+      }
 
-      expect(find.text('Create It!'), findsOneWidget);
+      expect(find.text("You're All Set!"), findsOneWidget);
       expect(find.text('Create Timer'), findsOneWidget);
     });
   });

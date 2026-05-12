@@ -5,6 +5,8 @@ import 'package:flutter/services.dart';
 import 'package:ivgo/domain/infusion_characteristics.dart';
 import 'package:ivgo/domain/infusion_timer.dart';
 import 'package:ivgo/pages/infusion_list_controller.dart';
+import 'package:ivgo/pages/settings_page.dart';
+import 'package:ivgo/repositories/first_launch_repository.dart';
 import 'package:ivgo/repositories/infusion_timer_repository.dart';
 import 'package:ivgo/services/notification_permission_status.dart';
 import 'package:gap/gap.dart';
@@ -18,6 +20,7 @@ class InfusionListPage extends StatefulWidget {
     super.key,
     required this.title,
     required this.notificationService,
+    required this.firstLaunchRepository,
     InfusionListController? infusionListController,
     InfusionTimerRepository? timerRepository,
   })  : _infusionListController = infusionListController,
@@ -25,6 +28,7 @@ class InfusionListPage extends StatefulWidget {
 
   final String title;
   final NotificationService notificationService;
+  final FirstLaunchRepository firstLaunchRepository;
   final InfusionListController? _infusionListController;
   final InfusionTimerRepository _timerRepository;
 
@@ -77,6 +81,11 @@ class _InfusionListPageState extends State<InfusionListPage> with WidgetsBinding
             backgroundColor: Theme.of(context).colorScheme.inversePrimary,
             title: Text(widget.title),
             actions: [
+              IconButton(
+                icon: const Icon(Icons.settings_outlined),
+                tooltip: 'Settings',
+                onPressed: _openSettings,
+              ),
               if (completedTimerCount > 0)
                 IconButton(
                   icon: const Icon(Icons.delete_sweep_outlined),
@@ -182,6 +191,16 @@ class _InfusionListPageState extends State<InfusionListPage> with WidgetsBinding
         },
         tooltip: 'Add New Infusion',
         child: const Icon(Icons.add),
+      ),
+    );
+  }
+
+  void _openSettings() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (BuildContext context) => SettingsPage(
+          firstLaunchRepository: widget.firstLaunchRepository,
+        ),
       ),
     );
   }

@@ -9,11 +9,13 @@ class TimerCardBase extends StatelessWidget {
     this.timer,
     this.previewData,
     this.trailingWidget,
+    this.showMenuHint = false,
   }) : assert(timer != null || previewData != null);
 
   final InfusionTimer? timer;
   final TimerPreviewData? previewData;
   final Widget? trailingWidget;
+  final bool showMenuHint;
 
   @override
   Widget build(BuildContext context) {
@@ -163,7 +165,7 @@ class TimerCardBase extends StatelessWidget {
     }
   }
 
-  Widget _buildHeader(
+Widget _buildHeader(
     ThemeData theme,
     String title,
     String statusLabel,
@@ -192,6 +194,14 @@ class TimerCardBase extends StatelessWidget {
             if (trailingWidget != null) ...<Widget>[
               const SizedBox(width: 6),
               trailingWidget!,
+            ],
+            if (showMenuHint) ...<Widget>[
+              const SizedBox(width: 6),
+              Icon(
+                Icons.more_vert,
+                size: 20,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
             ],
           ],
         ),

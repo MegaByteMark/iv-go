@@ -79,6 +79,7 @@ class _OnboardingWizardState extends State<OnboardingWizard> {
                   _buildVolumePage(),
                   _buildFlowRatePage(),
                   _buildCreatePage(),
+                  _buildMenuPage(),
                 ],
               ),
             ),
@@ -295,14 +296,14 @@ class _OnboardingWizardState extends State<OnboardingWizard> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: <Widget>[
           Text(
-            'Create It!',
+            'That\'s it!',
             style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
           ),
           const SizedBox(height: 8),
           Text(
-            'Your timer is ready to go',
+            'Your infusion timer is ready to go',
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
@@ -310,14 +311,38 @@ class _OnboardingWizardState extends State<OnboardingWizard> {
           const SizedBox(height: 32),
           TimerCardBase(
             previewData: _getPreviewData(),
+            showMenuHint: true,
           ),
-          const SizedBox(height: 32),
-          FilledButton(
-            onPressed: _createTimer,
-            style: FilledButton.styleFrom(
-              minimumSize: const Size(double.infinity, 56),
-            ),
-            child: const Text('Create Timer'),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMenuPage() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(32),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: <Widget>[
+          Icon(
+            Icons.check_circle_outline,
+            size: 48,
+            color: Theme.of(context).colorScheme.primary,
+          ),
+          const SizedBox(height: 24),
+          Text(
+            "You're All Set!",
+            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Tap the menu (⋮) on any timer to edit, pause, or remove it',
+            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+            textAlign: TextAlign.center,
           ),
         ],
       ),
@@ -362,7 +387,7 @@ class _OnboardingWizardState extends State<OnboardingWizard> {
       padding: const EdgeInsets.symmetric(vertical: 16),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
-        children: List<Widget>.generate(5, (int index) {
+        children: List<Widget>.generate(6, (int index) {
           final bool isActive = index == _currentPage;
           return AnimatedContainer(
             duration: const Duration(milliseconds: 200),
@@ -383,7 +408,7 @@ class _OnboardingWizardState extends State<OnboardingWizard> {
 
   Widget _buildNavigationButtons() {
     final bool canGoBack = _currentPage > 0;
-    final bool isLastPage = _currentPage == 4;
+    final bool isLastPage = _currentPage == 5;
 
     return Padding(
       padding: const EdgeInsets.all(16),
@@ -400,16 +425,27 @@ class _OnboardingWizardState extends State<OnboardingWizard> {
               ),
             ),
           if (canGoBack) const SizedBox(width: 16),
+          if (!isLastPage)
           Expanded(
             flex: canGoBack ? 1 : 2,
             child: FilledButton(
-              onPressed: isLastPage ? null : _goNext,
+              onPressed: _goNext,
               style: FilledButton.styleFrom(
                 minimumSize: const Size(0, 56),
               ),
-              child: Text(isLastPage ? '' : 'Next'),
+              child: const Text('Next'),
             ),
           ),
+          if (isLastPage)
+            Expanded(
+              child: FilledButton(
+                onPressed: _createTimer,
+                style: FilledButton.styleFrom(
+                  minimumSize: const Size(double.infinity, 56),
+                ),
+                child: const Text('Create Infusion Timer'),
+              ),
+            ),
         ],
       ),
     );
@@ -425,7 +461,7 @@ class _OnboardingWizardState extends State<OnboardingWizard> {
   }
 
   void _goNext() {
-    if (_currentPage < 4 && _validateCurrentPage()) {
+    if (_currentPage < 5 && _validateCurrentPage()) {
       _pageController.nextPage(
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
