@@ -4,7 +4,11 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:ivgo/pages/disclaimer_page.dart';
 import 'package:ivgo/pages/infusion_list_page.dart';
+import 'package:ivgo/pages/infusion_list_controller.dart';
+import 'package:ivgo/pages/onboarding_wizard.dart';
 import 'package:ivgo/repositories/disclaimer_acceptance_repository.dart';
+import 'package:ivgo/repositories/first_launch_repository.dart';
+import 'package:ivgo/repositories/infusion_timer_repository.dart';
 import 'package:ivgo/services/notification_service.dart';
 
 Future<void> main() async {
@@ -21,12 +25,14 @@ class IVGoApp extends StatelessWidget {
     super.key,
     required this.notificationService,
     DisclaimerAcceptanceRepository? disclaimerAcceptanceRepository,
-  }) : disclaimerAcceptanceRepository = disclaimerAcceptanceRepository ?? DisclaimerAcceptanceRepository();
+    FirstLaunchRepository? firstLaunchRepository,
+  })  : disclaimerAcceptanceRepository = disclaimerAcceptanceRepository ?? DisclaimerAcceptanceRepository(),
+        firstLaunchRepository = firstLaunchRepository ?? FirstLaunchRepository();
 
   final NotificationService notificationService;
   final DisclaimerAcceptanceRepository disclaimerAcceptanceRepository;
+  final FirstLaunchRepository firstLaunchRepository;
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -41,6 +47,7 @@ class IVGoApp extends StatelessWidget {
       home: _StartupGate(
         notificationService: notificationService,
         disclaimerAcceptanceRepository: disclaimerAcceptanceRepository,
+        firstLaunchRepository: firstLaunchRepository,
       ),
     );
   }
@@ -50,31 +57,47 @@ class _StartupGate extends StatefulWidget {
   const _StartupGate({
     required this.notificationService,
     required this.disclaimerAcceptanceRepository,
+    required this.firstLaunchRepository,
   });
 
   final NotificationService notificationService;
   final DisclaimerAcceptanceRepository disclaimerAcceptanceRepository;
+  final FirstLaunchRepository firstLaunchRepository;
 
   @override
   State<_StartupGate> createState() => _StartupGateState();
 }
 
 class _StartupGateState extends State<_StartupGate> {
-  static const Duration _disclaimerLoadTimeout = Duration(seconds: 3);
+  static const Duration _loadTimeout = Duration(seconds: 3);
 
   bool? _hasAcceptedDisclaimer;
+  bool? _hasSeenOnboarding;
+
+  late final InfusionListController _infusionListController;
 
   @override
   void initState() {
     super.initState();
-    _loadDisclaimerAcceptance();
+    _infusionListController = InfusionListController(
+      timerRepository: InfusionTimerRepository(),
+      notificationService: widget.notificationService,
+    );
+    _loadStartupState();
+  }
+
+  @override
+  void dispose() {
+    _infusionListController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final bool? hasAcceptedDisclaimer = _hasAcceptedDisclaimer;
+    final bool? hasSeenOnboarding = _hasSeenOnboarding;
 
-    if (hasAcceptedDisclaimer == null) {
+    if (hasAcceptedDisclaimer == null || hasSeenOnboarding == null) {
       return const Scaffold(
         body: Center(
           child: CircularProgressIndicator(),
@@ -88,19 +111,35 @@ class _StartupGateState extends State<_StartupGate> {
       );
     }
 
+    if (!hasSeenOnboarding) {
+      return OnboardingWizard(
+        controller: _infusionListController,
+        onComplete: _handleOnboardingComplete,
+        onSkip: _handleOnboardingComplete,
+      );
+    }
+
     return InfusionListPage(
       title: 'Active Infusions',
       notificationService: widget.notificationService,
+      infusionListController: _infusionListController,
     );
   }
 
-  Future<void> _loadDisclaimerAcceptance() async {
+  Future<void> _loadStartupState() async {
     bool hasAcceptedDisclaimer = false;
+    bool hasSeenOnboarding = false;
 
     try {
-      hasAcceptedDisclaimer = await widget.disclaimerAcceptanceRepository.hasAcceptedDisclaimer().timeout(_disclaimerLoadTimeout, onTimeout: () => false);
+      final results = await Future.wait([
+        widget.disclaimerAcceptanceRepository.hasAcceptedDisclaimer().timeout(_loadTimeout, onTimeout: () => false),
+        widget.firstLaunchRepository.hasSeenOnboarding().timeout(_loadTimeout, onTimeout: () => false),
+      ]);
+      hasAcceptedDisclaimer = results[0];
+      hasSeenOnboarding = results[1];
     } catch (_) {
       hasAcceptedDisclaimer = false;
+      hasSeenOnboarding = false;
     }
 
     if (!mounted) {
@@ -109,6 +148,7 @@ class _StartupGateState extends State<_StartupGate> {
 
     setState(() {
       _hasAcceptedDisclaimer = hasAcceptedDisclaimer;
+      _hasSeenOnboarding = hasSeenOnboarding;
     });
   }
 
@@ -121,6 +161,18 @@ class _StartupGateState extends State<_StartupGate> {
 
     setState(() {
       _hasAcceptedDisclaimer = true;
+    });
+  }
+
+  Future<void> _handleOnboardingComplete() async {
+    await widget.firstLaunchRepository.setHasSeenOnboarding(true);
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _hasSeenOnboarding = true;
     });
   }
 }

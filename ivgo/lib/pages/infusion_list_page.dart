@@ -18,20 +18,27 @@ class InfusionListPage extends StatefulWidget {
     super.key,
     required this.title,
     required this.notificationService,
+    InfusionListController? infusionListController,
     InfusionTimerRepository? timerRepository,
-  }) : timerRepository = timerRepository ?? InfusionTimerRepository();
+  })  : _infusionListController = infusionListController,
+        _timerRepository = timerRepository ?? InfusionTimerRepository();
 
   final String title;
-  final InfusionTimerRepository timerRepository;
   final NotificationService notificationService;
+  final InfusionListController? _infusionListController;
+  final InfusionTimerRepository _timerRepository;
 
   @override
   State<InfusionListPage> createState() => _InfusionListPageState();
 }
 
 class _InfusionListPageState extends State<InfusionListPage> with WidgetsBindingObserver {
-  late final InfusionListController _controller = InfusionListController(
-    timerRepository: widget.timerRepository,
+  InfusionListController get _controller {
+    return widget._infusionListController ?? _controllerInstance;
+  }
+
+  late final InfusionListController _controllerInstance = InfusionListController(
+    timerRepository: widget._timerRepository,
     notificationService: widget.notificationService,
   );
 
@@ -40,7 +47,9 @@ class _InfusionListPageState extends State<InfusionListPage> with WidgetsBinding
     super.initState();
 
     WidgetsBinding.instance.addObserver(this);
-    _controller.initialize();
+    if (widget._infusionListController == null) {
+      _controllerInstance.initialize();
+    }
   }
 
   @override
@@ -101,16 +110,41 @@ class _InfusionListPageState extends State<InfusionListPage> with WidgetsBinding
 
               if (infusionTimers.isEmpty) {
                 return Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: <Widget>[
-                      const Icon(Icons.vaccines, size: 100),
-                      const SizedBox(height: 16),
-                      Text(
-                        'No active infusions',
-                        style: Theme.of(context).textTheme.headlineSmall,
-                      ),
-                    ],
+                  child: Padding(
+                    padding: const EdgeInsets.all(32),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: <Widget>[
+                        Icon(
+                          Icons.vaccines,
+                          size: 100,
+                          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.6),
+                        ),
+                        const SizedBox(height: 24),
+                        Text(
+                          'No active infusions',
+                          style: Theme.of(context).textTheme.headlineSmall,
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Create your first infusion timer to get started',
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                              ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 32),
+                        FilledButton.icon(
+                          onPressed: _showAddInfusionSheet,
+                          icon: const Icon(Icons.add),
+                          label: const Text('Get Started'),
+                          style: FilledButton.styleFrom(
+                            minimumSize: const Size(200, 48),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 );
               }
@@ -150,6 +184,10 @@ class _InfusionListPageState extends State<InfusionListPage> with WidgetsBinding
         child: const Icon(Icons.add),
       ),
     );
+  }
+
+  Future<void> _showAddInfusionSheet() async {
+    await _addOrEditTimer(null);
   }
 
   Future<void> _requestNotificationPermissions() async {
