@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:ivgo/domain/infusion_characteristics.dart';
 import 'package:ivgo/pages/infusion_list_controller.dart';
+import 'package:ivgo/services/notification_permission_status.dart';
+import 'package:ivgo/services/notification_service.dart';
 import 'package:ivgo/widgets/timer_card_base.dart';
 
 class OnboardingWizard extends StatefulWidget {
@@ -9,11 +11,13 @@ class OnboardingWizard extends StatefulWidget {
     required this.controller,
     required this.onComplete,
     required this.onSkip,
+    required this.notificationService,
   });
 
   final InfusionListController controller;
   final VoidCallback onComplete;
   final VoidCallback onSkip;
+  final NotificationService notificationService;
 
   @override
   State<OnboardingWizard> createState() => _OnboardingWizardState();
@@ -37,6 +41,17 @@ class _OnboardingWizardState extends State<OnboardingWizard> {
   bool _volumeFieldAnimated = false;
   bool _dropFactorFieldAnimated = false;
   bool _flowRateFieldAnimated = false;
+
+  NotificationPermissionStatus _notificationStatus = NotificationPermissionStatus.notDetermined;
+  bool _notificationGranted = false;
+  bool _hasRequestedPermission = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _notificationStatus = widget.notificationService.permissionStatus.value;
+    _notificationGranted = _notificationStatus == NotificationPermissionStatus.granted;
+  }
 
   @override
   void dispose() {
@@ -78,6 +93,7 @@ class _OnboardingWizardState extends State<OnboardingWizard> {
                   _buildNamePage(),
                   _buildVolumePage(),
                   _buildFlowRatePage(),
+                  _buildNotificationsPage(),
                   _buildCreatePage(),
                   _buildMenuPage(),
                 ],
@@ -96,6 +112,21 @@ class _OnboardingWizardState extends State<OnboardingWizard> {
       _currentPage = page;
     });
     _animateFieldIfNeeded(page);
+
+    if (page == 4) {
+      _refreshNotificationStatus();
+    }
+  }
+
+  Future<void> _refreshNotificationStatus() async {
+    await widget.notificationService.refreshPermissionStatus();
+    if (mounted) {
+      setState(() {
+        _notificationStatus = widget.notificationService.permissionStatus.value;
+        _notificationGranted = _notificationStatus == NotificationPermissionStatus.granted;
+        _hasRequestedPermission = false;
+      });
+    }
   }
 
   void _animateFieldIfNeeded(int page) {
@@ -289,6 +320,148 @@ class _OnboardingWizardState extends State<OnboardingWizard> {
     );
   }
 
+  Widget _buildNotificationsPage() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(32),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: <Widget>[
+          Icon(
+            _notificationGranted ? Icons.notifications_active : Icons.notifications_off_outlined,
+            size: 48,
+            color: Theme.of(context).colorScheme.primary,
+          ),
+          const SizedBox(height: 24),
+          Text(
+            'Stay Notified',
+            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Get alerts for important milestones',
+            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 32),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Icon(
+                      Icons.info_outline,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'Enable notifications to receive alerts when your timer reaches important milestones.',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            ),
+                      ),
+                    ),
+                  ],
+                ),
+                if (_notificationGranted) ...<Widget>[
+                  const SizedBox(height: 16),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Icon(
+                        Icons.check_circle,
+                        color: Theme.of(context).colorScheme.primary,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'Notifications enabled! You\'ll receive milestone alerts even when the app is closed.',
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+                if (_notificationStatus == NotificationPermissionStatus.denied) ...<Widget>[
+                  const SizedBox(height: 16),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Icon(
+                        Icons.warning_outlined,
+                        color: Theme.of(context).colorScheme.error,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'Notifications are turned off. The app will still work, but you\'ll need to keep it open to monitor your timer.',
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                color: Theme.of(context).colorScheme.error,
+                              ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ],
+            ),
+          ),
+          if (_notificationStatus == NotificationPermissionStatus.notDetermined && !_hasRequestedPermission) ...<Widget>[
+            const SizedBox(height: 24),
+            FilledButton.tonal(
+              onPressed: _requestNotificationPermission,
+              style: FilledButton.styleFrom(
+                minimumSize: const Size(double.infinity, 48),
+              ),
+              child: const Text('Enable Notifications'),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Future<void> _requestNotificationPermission() async {
+    setState(() {
+      _hasRequestedPermission = true;
+    });
+
+    await widget.notificationService.requestPermissions();
+    await widget.notificationService.refreshPermissionStatus();
+
+    if (mounted) {
+      setState(() {
+        _notificationStatus = widget.notificationService.permissionStatus.value;
+        _notificationGranted = _notificationStatus == NotificationPermissionStatus.granted;
+      });
+
+      if (_notificationGranted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Notifications enabled!'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+
   Widget _buildCreatePage() {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(32),
@@ -387,7 +560,7 @@ class _OnboardingWizardState extends State<OnboardingWizard> {
       padding: const EdgeInsets.symmetric(vertical: 16),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
-        children: List<Widget>.generate(6, (int index) {
+        children: List<Widget>.generate(7, (int index) {
           final bool isActive = index == _currentPage;
           return AnimatedContainer(
             duration: const Duration(milliseconds: 200),
@@ -408,7 +581,7 @@ class _OnboardingWizardState extends State<OnboardingWizard> {
 
   Widget _buildNavigationButtons() {
     final bool canGoBack = _currentPage > 0;
-    final bool isLastPage = _currentPage == 5;
+    final bool isLastPage = _currentPage == 6;
 
     return Padding(
       padding: const EdgeInsets.all(16),
@@ -426,16 +599,16 @@ class _OnboardingWizardState extends State<OnboardingWizard> {
             ),
           if (canGoBack) const SizedBox(width: 16),
           if (!isLastPage)
-          Expanded(
-            flex: canGoBack ? 1 : 2,
-            child: FilledButton(
-              onPressed: _goNext,
-              style: FilledButton.styleFrom(
-                minimumSize: const Size(0, 56),
+            Expanded(
+              flex: canGoBack ? 1 : 2,
+              child: FilledButton(
+                onPressed: _goNext,
+                style: FilledButton.styleFrom(
+                  minimumSize: const Size(0, 56),
+                ),
+                child: const Text('Next'),
               ),
-              child: const Text('Next'),
             ),
-          ),
           if (isLastPage)
             Expanded(
               child: FilledButton(
@@ -461,7 +634,7 @@ class _OnboardingWizardState extends State<OnboardingWizard> {
   }
 
   void _goNext() {
-    if (_currentPage < 5 && _validateCurrentPage()) {
+    if (_currentPage < 6 && _validateCurrentPage()) {
       _pageController.nextPage(
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
@@ -480,6 +653,8 @@ class _OnboardingWizardState extends State<OnboardingWizard> {
         final dropFactor = double.tryParse(_dropFactorController.text);
         final flowRate = double.tryParse(_flowRateController.text);
         return dropFactor != null && dropFactor > 0 && flowRate != null && flowRate > 0;
+      case 4:
+        return true;
       default:
         return true;
     }

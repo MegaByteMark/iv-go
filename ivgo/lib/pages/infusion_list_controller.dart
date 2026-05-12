@@ -94,6 +94,7 @@ class InfusionListController {
     _replaceInfusionTimers(List<InfusionTimer>.of(currentTimers)..add(timer));
     _manageRefreshTimer();
     await _syncTimerNotifications(timer);
+    await saveState();
 
     return timer;
   }
@@ -108,6 +109,7 @@ class InfusionListController {
     _refreshInfusionTimers();
     _manageRefreshTimer();
     await _syncTimerNotifications(timer);
+    await saveState();
 
     return timer;
   }
@@ -131,6 +133,7 @@ class InfusionListController {
     _replaceInfusionTimers(List<InfusionTimer>.of(currentTimers)..remove(timer));
     _manageRefreshTimer();
     await _cancelTimerNotifications(timer);
+    await saveState();
   }
 
   Future<void> clearCompletedTimers() async {

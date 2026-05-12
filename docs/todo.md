@@ -142,7 +142,8 @@ Based on review of `copilot-requirements.md` vs current codebase implementation 
 ## Medium Priority: UI, Accessibility, And Product Fit
 
 ### Main List UX
-- [ ] Create visual on-boarding flow to guide the user to create and manage their first infusion timer
+- [x] Create visual on-boarding flow to guide the user to create and manage their first infusion timer
+  - 7-page wizard with animated form fields, live preview, and notification permission request
 
 #### Onboarding Wizard Implementation Plan
 
@@ -179,8 +180,9 @@ Based on review of `copilot-requirements.md` vs current codebase implementation 
 | 2 | Name Your Infusion | Title field with example, explanation text |
 | 3 | Set Your Target | Volume input (ml), typical range guidance |
 | 4 | Configure Flow Rate | Drop factor + flow rate fields, visual explanation |
-| 5 | Create It! | Live preview card with menu hint + "Next" |
-| 6 | You're All Set! | "Create Timer" button to finish |
+| 5 | Stay Notified | Notification permission request, explains alerts work without if denied |
+| 6 | That's it! | Live preview card with menu hint + "Next" |
+| 7 | You're All Set! | "Create Infusion Timer" button to finish |
 
 - [x] Implement welcome page (step 1)
   - Large app icon (120px)
@@ -199,13 +201,22 @@ Based on review of `copilot-requirements.md` vs current codebase implementation 
   - Flow rate field (gtts/min)
   - Visual explanation of gtts/min concept
   - Field animation: brief pulse/glow on entry
-- [x] Implement create step (step 5)
+- [x] Implement notifications step (step 5)
+  - Shows current notification permission status (granted/denied/not determined)
+  - Icon changes based on status (notifications_active vs notifications_off_outlined)
+  - Green confirmation message if granted
+  - Red warning message if denied
+  - "Enable Notifications" button if not yet determined, requests permissions on tap
+  - Shows snackbar on successful permission grant
+  - App works without permissions, just needs to stay open
+- [x] Implement create step (step 6)
   - Live preview card using `TimerCardBase` that updates as user fills fields
-  - "Back" button to return to previous step
-- [x] Implement menu options step (step 6)
+  - Shows menu hint (⋮) on preview card
+  - "Next" button to proceed
+- [x] Implement menu options step (step 7)
   - Shows timer card with menu icon hint (⋮)
   - Lists available overflow menu options: Edit, Pause/Resume, Remove
-  - "Create Timer" button that creates timer and navigates to main list
+  - "Create Infusion Timer" button that creates timer and navigates to main list
   - "Back" button to return to previous step
 
 ##### Phase 4: Update App Startup Gate

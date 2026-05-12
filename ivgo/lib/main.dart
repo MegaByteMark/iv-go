@@ -83,6 +83,7 @@ class _StartupGateState extends State<_StartupGate> {
       timerRepository: InfusionTimerRepository(),
       notificationService: widget.notificationService,
     );
+    _infusionListController.initialize();
     _loadStartupState();
   }
 
@@ -116,6 +117,7 @@ class _StartupGateState extends State<_StartupGate> {
         controller: _infusionListController,
         onComplete: _handleOnboardingComplete,
         onSkip: _handleOnboardingComplete,
+        notificationService: widget.notificationService,
       );
     }
 

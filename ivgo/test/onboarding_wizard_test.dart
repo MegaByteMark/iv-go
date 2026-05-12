@@ -54,7 +54,7 @@ void main() {
   }
 
   group('Onboarding Wizard', () {
-    testWidgets('renders all 6 pages', (WidgetTester tester) async {
+    testWidgets('renders all 7 pages', (WidgetTester tester) async {
       await pumpAppWithOnboarding(
         tester: tester,
         disclaimerAcceptanceRepository: FakeDisclaimerAcceptanceRepository(initialAccepted: true),
@@ -79,7 +79,11 @@ void main() {
 
       await tester.tap(find.text('Next'));
       await tester.pumpAndSettle();
-      expect(find.text('Create It!'), findsOneWidget);
+      expect(find.text('Stay Notified'), findsOneWidget);
+
+      await tester.tap(find.text('Next'));
+      await tester.pumpAndSettle();
+      expect(find.text("That's it!"), findsOneWidget);
 
       await tester.tap(find.text('Next'));
       await tester.pumpAndSettle();
@@ -145,7 +149,11 @@ void main() {
       await tester.enterText(find.widgetWithText(TextField, 'Flow Rate (gtts/min)'), '30');
       await tester.tap(find.text('Next'));
       await tester.pumpAndSettle();
-      expect(find.text('Create It!'), findsOneWidget);
+      expect(find.text('Stay Notified'), findsOneWidget);
+
+      await tester.tap(find.text('Next'));
+      await tester.pumpAndSettle();
+      expect(find.text("That's it!"), findsOneWidget);
     });
 
     testWidgets('back navigation is disabled on first page', (WidgetTester tester) async {
@@ -181,7 +189,12 @@ void main() {
       await tester.tap(find.text('Next'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Create It!'), findsOneWidget);
+      expect(find.text('Stay Notified'), findsOneWidget);
+
+      await tester.tap(find.text('Next'));
+      await tester.pumpAndSettle();
+
+      expect(find.text("That's it!"), findsOneWidget);
       expect(find.text('Test Infusion'), findsOneWidget);
     });
 
@@ -192,13 +205,13 @@ void main() {
         firstLaunchRepository: FakeFirstLaunchRepository(initialSeen: false),
       );
 
-      for (int i = 0; i < 5; i++) {
+      for (int i = 0; i < 6; i++) {
         await tester.tap(find.text('Next'));
         await tester.pumpAndSettle();
       }
 
       expect(find.text("You're All Set!"), findsOneWidget);
-      expect(find.text('Create Timer'), findsOneWidget);
+      expect(find.text('Create Infusion Timer'), findsOneWidget);
     });
   });
 }
