@@ -125,6 +125,7 @@ class _StartupGateState extends State<_StartupGate> {
       title: 'Active Infusions',
       notificationService: widget.notificationService,
       firstLaunchRepository: widget.firstLaunchRepository,
+      disclaimerAcceptanceRepository: widget.disclaimerAcceptanceRepository,
       infusionListController: _infusionListController,
     );
   }

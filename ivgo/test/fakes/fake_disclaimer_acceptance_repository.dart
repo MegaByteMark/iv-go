@@ -16,4 +16,9 @@ class FakeDisclaimerAcceptanceRepository extends DisclaimerAcceptanceRepository 
   Future<void> recordAcceptedDisclaimer() async {
     _hasAcceptedDisclaimer = true;
   }
+
+  @override
+  Future<void> clearDisclaimerAcceptance() async {
+    _hasAcceptedDisclaimer = false;
+  }
 }

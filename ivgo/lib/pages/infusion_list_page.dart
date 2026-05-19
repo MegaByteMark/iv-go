@@ -6,6 +6,7 @@ import 'package:ivgo/domain/infusion_characteristics.dart';
 import 'package:ivgo/domain/infusion_timer.dart';
 import 'package:ivgo/pages/infusion_list_controller.dart';
 import 'package:ivgo/pages/settings_page.dart';
+import 'package:ivgo/repositories/disclaimer_acceptance_repository.dart';
 import 'package:ivgo/repositories/first_launch_repository.dart';
 import 'package:ivgo/repositories/infusion_timer_repository.dart';
 import 'package:ivgo/services/notification_permission_status.dart';
@@ -21,6 +22,7 @@ class InfusionListPage extends StatefulWidget {
     required this.title,
     required this.notificationService,
     required this.firstLaunchRepository,
+    required this.disclaimerAcceptanceRepository,
     InfusionListController? infusionListController,
     InfusionTimerRepository? timerRepository,
   })  : _infusionListController = infusionListController,
@@ -29,6 +31,7 @@ class InfusionListPage extends StatefulWidget {
   final String title;
   final NotificationService notificationService;
   final FirstLaunchRepository firstLaunchRepository;
+  final DisclaimerAcceptanceRepository disclaimerAcceptanceRepository;
   final InfusionListController? _infusionListController;
   final InfusionTimerRepository _timerRepository;
 
@@ -200,6 +203,7 @@ class _InfusionListPageState extends State<InfusionListPage> with WidgetsBinding
       MaterialPageRoute(
         builder: (BuildContext context) => SettingsPage(
           firstLaunchRepository: widget.firstLaunchRepository,
+          disclaimerAcceptanceRepository: widget.disclaimerAcceptanceRepository,
         ),
       ),
     );

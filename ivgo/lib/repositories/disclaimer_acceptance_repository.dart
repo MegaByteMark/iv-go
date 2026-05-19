@@ -20,4 +20,10 @@ class DisclaimerAcceptanceRepository {
 
     await sharedPreferences.setBool(_storageKey, true);
   }
+
+  Future<void> clearDisclaimerAcceptance() async {
+    final SharedPreferences sharedPreferences = await _sharedPreferencesFactory();
+
+    await sharedPreferences.setBool(_storageKey, false);
+  }
 }

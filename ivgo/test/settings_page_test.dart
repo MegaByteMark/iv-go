@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ivgo/main.dart';
 import 'package:ivgo/pages/settings_page.dart';
+import 'package:ivgo/repositories/disclaimer_acceptance_repository.dart';
 import 'package:ivgo/repositories/first_launch_repository.dart';
 
 import 'fakes/fake_disclaimer_acceptance_repository.dart';
@@ -12,11 +13,12 @@ void main() {
   Future<void> pumpAppWithSettings({
     required WidgetTester tester,
     required FirstLaunchRepository firstLaunchRepository,
+    DisclaimerAcceptanceRepository? disclaimerAcceptanceRepository,
   }) async {
     await tester.pumpWidget(
       IVGoApp(
         notificationService: FakeNotificationService(),
-        disclaimerAcceptanceRepository: FakeDisclaimerAcceptanceRepository(initialAccepted: true),
+        disclaimerAcceptanceRepository: disclaimerAcceptanceRepository ?? FakeDisclaimerAcceptanceRepository(initialAccepted: true),
         firstLaunchRepository: firstLaunchRepository,
       ),
     );
@@ -68,6 +70,38 @@ void main() {
 
     expect(await firstLaunchRepository.hasSeenOnboarding(), isFalse);
     expect(find.text('Walkthrough will show on next app launch'), findsOneWidget);
+  });
+
+  testWidgets('settings page shows reset disclaimer option', (WidgetTester tester) async {
+    await pumpAppWithSettings(
+      tester: tester,
+      firstLaunchRepository: FakeFirstLaunchRepository(initialSeen: true),
+    );
+
+    await tester.tap(find.byTooltip('Settings'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Reset Disclaimer'), findsOneWidget);
+    expect(find.text('Show the safety disclaimer again'), findsOneWidget);
+  });
+
+  testWidgets('reset disclaimer resets disclaimer acceptance state', (WidgetTester tester) async {
+    final disclaimerRepository = FakeDisclaimerAcceptanceRepository(initialAccepted: true);
+
+    await pumpAppWithSettings(
+      tester: tester,
+      firstLaunchRepository: FakeFirstLaunchRepository(initialSeen: true),
+      disclaimerAcceptanceRepository: disclaimerRepository,
+    );
+
+    await tester.tap(find.byTooltip('Settings'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Reset Disclaimer'));
+    await tester.pumpAndSettle();
+
+    expect(await disclaimerRepository.hasAcceptedDisclaimer(), isFalse);
+    expect(find.text('Disclaimer will show on next app launch'), findsOneWidget);
   });
 
   testWidgets('settings page shows dark mode option (disabled)', (WidgetTester tester) async {
