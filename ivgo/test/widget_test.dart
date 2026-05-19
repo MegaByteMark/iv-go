@@ -9,6 +9,7 @@ import 'package:ivgo/main.dart';
 import 'package:ivgo/pages/infusion_list_controller.dart';
 import 'package:ivgo/repositories/disclaimer_acceptance_repository.dart';
 import 'package:ivgo/repositories/infusion_timer_repository.dart';
+import 'package:ivgo/repositories/theme_repository.dart';
 import 'package:ivgo/services/notification_permission_status.dart';
 import 'package:ivgo/services/notification_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -16,6 +17,7 @@ import 'package:signals_flutter/signals_flutter.dart';
 
 import 'fakes/fake_disclaimer_acceptance_repository.dart';
 import 'fakes/fake_notification_service.dart';
+import 'fakes/fake_theme_repository.dart';
 
 const String deniedPermissionWarning =
     'Notifications are turned off. Background alerts will not function. Re-enable notifications in system settings and monitor timers in-app until alerts are restored.';
@@ -93,12 +95,14 @@ void main() {
     WidgetTester tester, {
     NotificationService? notificationService,
     DisclaimerAcceptanceRepository? disclaimerAcceptanceRepository,
+    ThemeRepository? themeRepository,
     bool settle = true,
   }) async {
     await tester.pumpWidget(
       IVGoApp(
         notificationService: notificationService ?? FakeNotificationService(),
         disclaimerAcceptanceRepository: disclaimerAcceptanceRepository ?? FakeDisclaimerAcceptanceRepository(initialAccepted: true),
+        themeRepository: themeRepository ?? FakeThemeRepository(),
       ),
     );
 

@@ -1,16 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:ivgo/repositories/disclaimer_acceptance_repository.dart';
 import 'package:ivgo/repositories/first_launch_repository.dart';
+import 'package:ivgo/repositories/theme_repository.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({
     super.key,
     required this.firstLaunchRepository,
     required this.disclaimerAcceptanceRepository,
+    required this.themeRepository,
+    required this.onThemeChanged,
+    required this.themeMode,
   });
 
   final FirstLaunchRepository firstLaunchRepository;
   final DisclaimerAcceptanceRepository disclaimerAcceptanceRepository;
+  final ThemeRepository themeRepository;
+  final ValueChanged<ThemeMode> onThemeChanged;
+  final ThemeMode themeMode;
 
   @override
   State<SettingsPage> createState() => _SettingsPageState();
@@ -100,13 +107,34 @@ class _SettingsPageState extends State<SettingsPage> {
           ),
           const Divider(),
           const _SectionHeader(title: 'Appearance'),
-          SwitchListTile(
-            secondary: const Icon(Icons.dark_mode_outlined),
-            title: const Text('Dark Mode'),
-            subtitle: const Text('Use dark theme (coming soon)'),
-            value: false,
-            onChanged: null,
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: SegmentedButton<ThemeMode>(
+              segments: const <ButtonSegment<ThemeMode>>[
+                ButtonSegment<ThemeMode>(
+                  value: ThemeMode.system,
+                  label: Text('System'),
+                  icon: Icon(Icons.settings_brightness_outlined),
+                ),
+                ButtonSegment<ThemeMode>(
+                  value: ThemeMode.light,
+                  label: Text('Light'),
+                  icon: Icon(Icons.light_mode_outlined),
+                ),
+                ButtonSegment<ThemeMode>(
+                  value: ThemeMode.dark,
+                  label: Text('Dark'),
+                  icon: Icon(Icons.dark_mode_outlined),
+                ),
+              ],
+              selected: <ThemeMode>{widget.themeMode},
+              onSelectionChanged: (Set<ThemeMode> selected) {
+                widget.onThemeChanged(selected.first);
+              },
+              showSelectedIcon: false,
+            ),
           ),
+          const SizedBox(height: 16),
         ],
       ),
     );

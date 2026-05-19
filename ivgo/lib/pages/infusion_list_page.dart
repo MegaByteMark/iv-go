@@ -9,6 +9,7 @@ import 'package:ivgo/pages/settings_page.dart';
 import 'package:ivgo/repositories/disclaimer_acceptance_repository.dart';
 import 'package:ivgo/repositories/first_launch_repository.dart';
 import 'package:ivgo/repositories/infusion_timer_repository.dart';
+import 'package:ivgo/repositories/theme_repository.dart';
 import 'package:ivgo/services/notification_permission_status.dart';
 import 'package:gap/gap.dart';
 import 'package:ivgo/services/notification_service.dart';
@@ -23,6 +24,9 @@ class InfusionListPage extends StatefulWidget {
     required this.notificationService,
     required this.firstLaunchRepository,
     required this.disclaimerAcceptanceRepository,
+    required this.themeRepository,
+    required this.onThemeChanged,
+    required this.themeMode,
     InfusionListController? infusionListController,
     InfusionTimerRepository? timerRepository,
   })  : _infusionListController = infusionListController,
@@ -32,6 +36,9 @@ class InfusionListPage extends StatefulWidget {
   final NotificationService notificationService;
   final FirstLaunchRepository firstLaunchRepository;
   final DisclaimerAcceptanceRepository disclaimerAcceptanceRepository;
+  final ThemeRepository themeRepository;
+  final ValueChanged<ThemeMode> onThemeChanged;
+  final ThemeMode themeMode;
   final InfusionListController? _infusionListController;
   final InfusionTimerRepository _timerRepository;
 
@@ -201,10 +208,13 @@ class _InfusionListPageState extends State<InfusionListPage> with WidgetsBinding
   void _openSettings() {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (BuildContext context) => SettingsPage(
-          firstLaunchRepository: widget.firstLaunchRepository,
-          disclaimerAcceptanceRepository: widget.disclaimerAcceptanceRepository,
-        ),
+          builder: (BuildContext context) => SettingsPage(
+            firstLaunchRepository: widget.firstLaunchRepository,
+            disclaimerAcceptanceRepository: widget.disclaimerAcceptanceRepository,
+            themeRepository: widget.themeRepository,
+            onThemeChanged: widget.onThemeChanged,
+            themeMode: widget.themeMode,
+          ),
       ),
     );
   }

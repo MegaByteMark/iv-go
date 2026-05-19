@@ -4,22 +4,26 @@ import 'package:ivgo/main.dart';
 import 'package:ivgo/pages/settings_page.dart';
 import 'package:ivgo/repositories/disclaimer_acceptance_repository.dart';
 import 'package:ivgo/repositories/first_launch_repository.dart';
+import 'package:ivgo/repositories/theme_repository.dart';
 
 import 'fakes/fake_disclaimer_acceptance_repository.dart';
 import 'fakes/fake_first_launch_repository.dart';
 import 'fakes/fake_notification_service.dart';
+import 'fakes/fake_theme_repository.dart';
 
 void main() {
   Future<void> pumpAppWithSettings({
     required WidgetTester tester,
     required FirstLaunchRepository firstLaunchRepository,
     DisclaimerAcceptanceRepository? disclaimerAcceptanceRepository,
+    ThemeRepository? themeRepository,
   }) async {
     await tester.pumpWidget(
       IVGoApp(
         notificationService: FakeNotificationService(),
         disclaimerAcceptanceRepository: disclaimerAcceptanceRepository ?? FakeDisclaimerAcceptanceRepository(initialAccepted: true),
         firstLaunchRepository: firstLaunchRepository,
+        themeRepository: themeRepository ?? FakeThemeRepository(),
       ),
     );
 
@@ -104,21 +108,29 @@ void main() {
     expect(find.text('Disclaimer will show on next app launch'), findsOneWidget);
   });
 
-  testWidgets('settings page shows dark mode option (disabled)', (WidgetTester tester) async {
+  testWidgets('settings page shows theme mode segmented control', (WidgetTester tester) async {
     final firstLaunchRepository = FakeFirstLaunchRepository(initialSeen: true);
+    final themeRepository = FakeThemeRepository(initialThemeMode: ThemeMode.system);
 
     await pumpAppWithSettings(
       tester: tester,
       firstLaunchRepository: firstLaunchRepository,
+      themeRepository: themeRepository,
     );
 
     await tester.tap(find.byTooltip('Settings'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Dark Mode'), findsOneWidget);
-    expect(find.text('Use dark theme (coming soon)'), findsOneWidget);
+    expect(find.text('System'), findsOneWidget);
+    expect(find.text('Light'), findsOneWidget);
+    expect(find.text('Dark'), findsOneWidget);
 
-    final SwitchListTile switchTile = tester.widget(find.byType(SwitchListTile));
-    expect(switchTile.onChanged, isNull);
+    final SegmentedButton<ThemeMode> segmentedButton = tester.widget(find.byType(SegmentedButton<ThemeMode>));
+    expect(segmentedButton.selected, <ThemeMode>{ThemeMode.system});
+
+    await tester.tap(find.text('Dark'));
+    await tester.pumpAndSettle();
+
+    expect(await themeRepository.getThemeMode(), ThemeMode.dark);
   });
 }

@@ -9,6 +9,7 @@ import 'package:ivgo/pages/onboarding_wizard.dart';
 import 'package:ivgo/repositories/disclaimer_acceptance_repository.dart';
 import 'package:ivgo/repositories/first_launch_repository.dart';
 import 'package:ivgo/repositories/infusion_timer_repository.dart';
+import 'package:ivgo/repositories/theme_repository.dart';
 import 'package:ivgo/services/notification_service.dart';
 
 Future<void> main() async {
@@ -20,18 +21,58 @@ Future<void> main() async {
   runApp(IVGoApp(notificationService: notificationService));
 }
 
-class IVGoApp extends StatelessWidget {
+class IVGoApp extends StatefulWidget {
   IVGoApp({
     super.key,
     required this.notificationService,
     DisclaimerAcceptanceRepository? disclaimerAcceptanceRepository,
     FirstLaunchRepository? firstLaunchRepository,
+    ThemeRepository? themeRepository,
   })  : disclaimerAcceptanceRepository = disclaimerAcceptanceRepository ?? DisclaimerAcceptanceRepository(),
-        firstLaunchRepository = firstLaunchRepository ?? FirstLaunchRepository();
+        firstLaunchRepository = firstLaunchRepository ?? FirstLaunchRepository(),
+        themeRepository = themeRepository ?? ThemeRepository();
 
   final NotificationService notificationService;
   final DisclaimerAcceptanceRepository disclaimerAcceptanceRepository;
   final FirstLaunchRepository firstLaunchRepository;
+  final ThemeRepository themeRepository;
+
+  @override
+  State<IVGoApp> createState() => _IVGoAppState();
+}
+
+class _IVGoAppState extends State<IVGoApp> {
+  ThemeMode _themeMode = ThemeMode.system;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTheme();
+  }
+
+  Future<void> _loadTheme() async {
+    final ThemeMode loaded = await widget.themeRepository.getThemeMode();
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _themeMode = loaded;
+    });
+  }
+
+  Future<void> _onThemeChanged(ThemeMode mode) async {
+    await widget.themeRepository.setThemeMode(mode);
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _themeMode = mode;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -44,10 +85,21 @@ class IVGoApp extends StatelessWidget {
           primaryColor: Colors.lightBlue,
         ),
       ),
+      darkTheme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.lightBlue, brightness: Brightness.dark),
+        useMaterial3: true,
+        cupertinoOverrideTheme: const CupertinoThemeData(
+          primaryColor: Colors.lightBlue,
+        ),
+      ),
+      themeMode: _themeMode,
       home: _StartupGate(
-        notificationService: notificationService,
-        disclaimerAcceptanceRepository: disclaimerAcceptanceRepository,
-        firstLaunchRepository: firstLaunchRepository,
+        notificationService: widget.notificationService,
+        disclaimerAcceptanceRepository: widget.disclaimerAcceptanceRepository,
+        firstLaunchRepository: widget.firstLaunchRepository,
+        themeRepository: widget.themeRepository,
+        onThemeChanged: _onThemeChanged,
+        themeMode: _themeMode,
       ),
     );
   }
@@ -58,11 +110,17 @@ class _StartupGate extends StatefulWidget {
     required this.notificationService,
     required this.disclaimerAcceptanceRepository,
     required this.firstLaunchRepository,
+    required this.themeRepository,
+    required this.onThemeChanged,
+    required this.themeMode,
   });
 
   final NotificationService notificationService;
   final DisclaimerAcceptanceRepository disclaimerAcceptanceRepository;
   final FirstLaunchRepository firstLaunchRepository;
+  final ThemeRepository themeRepository;
+  final ValueChanged<ThemeMode> onThemeChanged;
+  final ThemeMode themeMode;
 
   @override
   State<_StartupGate> createState() => _StartupGateState();
@@ -127,6 +185,9 @@ class _StartupGateState extends State<_StartupGate> {
       firstLaunchRepository: widget.firstLaunchRepository,
       disclaimerAcceptanceRepository: widget.disclaimerAcceptanceRepository,
       infusionListController: _infusionListController,
+      themeRepository: widget.themeRepository,
+      onThemeChanged: widget.onThemeChanged,
+      themeMode: widget.themeMode,
     );
   }
 
