@@ -289,7 +289,7 @@ Based on review of `copilot-requirements.md` vs current codebase implementation 
 ## Low Priority
 ### UI Tweaks
 - [ ] Fix up app icon
-- [ ] Fix up app splash screen
+- [x] Fix up app splash screen
 
 ### DevOps
 - [x] Implement basic CI/CD for this repository to validate quality of merges into develop and form the basis of good PR's.
