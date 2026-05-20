@@ -161,12 +161,22 @@ class InfusionListController {
       return;
     }
 
+    _sortByRemainingTime(timers);
     _cachedTimers = timers;
     _infusionTimers.value = timers;
   }
 
   void _refreshInfusionTimers() {
     _replaceInfusionTimers(List<InfusionTimer>.of(currentTimers));
+  }
+
+  void _sortByRemainingTime(List<InfusionTimer> timers) {
+    timers.sort((a, b) {
+      if (a.isEnded != b.isEnded) {
+        return a.isEnded ? 1 : -1;
+      }
+      return a.remainingSeconds.compareTo(b.remainingSeconds);
+    });
   }
 
   void _manageRefreshTimer() {

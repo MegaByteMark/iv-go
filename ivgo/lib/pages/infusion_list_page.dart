@@ -172,28 +172,33 @@ class _InfusionListPageState extends State<InfusionListPage> with WidgetsBinding
                 );
               }
 
-              return ListView.builder(
-                padding: const EdgeInsets.fromLTRB(12, 8, 12, 16),
-                itemCount: infusionTimers.length,
-                itemBuilder: (context, index) {
-                  final timer = infusionTimers[index];
+              return AnimatedSwitcher(
+                duration: const Duration(milliseconds: 300),
+                child: ListView.builder(
+                  key: ValueKey(infusionTimers.map((t) => t.id).join(',')),
+                  padding: const EdgeInsets.fromLTRB(12, 8, 12, 16),
+                  itemCount: infusionTimers.length,
+                  itemBuilder: (context, index) {
+                    final timer = infusionTimers[index];
 
-                  return Padding(
-                    padding: EdgeInsets.only(bottom: index == infusionTimers.length - 1 ? 0 : 8),
-                    child: InfusionRow(
-                      timer,
-                      onChanged: (_) => unawaited(_controller.handleTimerChanged(timer)),
-                      onRemove: (theTimer) => unawaited(_controller.removeTimer(theTimer)),
-                      onEdit: (theTimer) async {
-                        final InfusionTimer? savedTimer = await _addOrEditTimer(theTimer);
+                    return Padding(
+                      padding: EdgeInsets.only(bottom: index == infusionTimers.length - 1 ? 0 : 8),
+                      child: InfusionRow(
+                        timer,
+                        key: ValueKey(timer.id),
+                        onChanged: (_) => unawaited(_controller.handleTimerChanged(timer)),
+                        onRemove: (theTimer) => unawaited(_controller.removeTimer(theTimer)),
+                        onEdit: (theTimer) async {
+                          final InfusionTimer? savedTimer = await _addOrEditTimer(theTimer);
 
-                        if (savedTimer == null) {
-                          return;
-                        }
-                      },
-                    ),
-                  );
-                },
+                          if (savedTimer == null) {
+                            return;
+                          }
+                        },
+                      ),
+                    );
+                  },
+                ),
               );
             }),
           ),
@@ -261,12 +266,24 @@ class _InfusionListPageState extends State<InfusionListPage> with WidgetsBinding
           ),
           actions: <Widget>[
             TextButton(
+              style: TextButton.styleFrom(
+                minimumSize: const Size(64, 48),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(18),
+                ),
+              ),
               onPressed: () {
                 Navigator.of(context).pop(false);
               },
               child: const Text('Cancel'),
             ),
             FilledButton(
+              style: FilledButton.styleFrom(
+                minimumSize: const Size(64, 56),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(18),
+                ),
+              ),
               onPressed: () {
                 Navigator.of(context).pop(true);
               },

@@ -104,6 +104,8 @@ class InfusionRow extends StatelessWidget {
   }
 
   void _showRemoveConfirmation(BuildContext context) {
+    final ColorScheme colorScheme = Theme.of(context).colorScheme;
+
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -112,13 +114,26 @@ class InfusionRow extends StatelessWidget {
           content: const Text('Are you sure you want to remove this infusion?'),
           actions: <Widget>[
             TextButton(
-              child: const Text('Cancel'),
+              style: TextButton.styleFrom(
+                minimumSize: const Size(64, 48),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(18),
+                ),
+              ),
               onPressed: () {
                 Navigator.of(context).pop();
               },
+              child: const Text('Cancel'),
             ),
-            TextButton(
-              child: const Text('Remove'),
+            FilledButton(
+              style: FilledButton.styleFrom(
+                minimumSize: const Size(64, 56),
+                backgroundColor: colorScheme.error,
+                foregroundColor: colorScheme.onError,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(18),
+                ),
+              ),
               onPressed: () {
                 Navigator.of(context).pop();
 
@@ -126,6 +141,7 @@ class InfusionRow extends StatelessWidget {
                   onRemove!(timer);
                 }
               },
+              child: const Text('Remove'),
             ),
           ],
         );

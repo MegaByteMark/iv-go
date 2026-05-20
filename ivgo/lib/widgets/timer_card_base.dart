@@ -279,13 +279,14 @@ Widget _buildHeader(
         borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: <Widget>[
           Icon(Icons.warning_amber_rounded, color: colorScheme.error),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
               'Completed while the app was unavailable. Review this infusion.',
+              textAlign: TextAlign.center,
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: contentColor,
                 fontWeight: FontWeight.w600,
