@@ -132,6 +132,12 @@ class _SettingsPageState extends State<SettingsPage> {
                 widget.onThemeChanged(selected.first);
               },
               showSelectedIcon: false,
+              style: ButtonStyle(
+                visualDensity: VisualDensity.standard,
+                padding: WidgetStatePropertyAll(
+                  const EdgeInsets.symmetric(vertical: 12),
+                ),
+              ),
             ),
           ),
           const SizedBox(height: 16),

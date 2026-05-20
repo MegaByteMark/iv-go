@@ -79,6 +79,9 @@ class _OnboardingWizardState extends State<OnboardingWizard> {
         actions: <Widget>[
           TextButton(
             onPressed: widget.onSkip,
+            style: TextButton.styleFrom(
+              minimumSize: const Size(48, 48),
+            ),
             child: const Text('Skip'),
           ),
         ],

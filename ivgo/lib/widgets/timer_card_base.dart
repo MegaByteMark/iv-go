@@ -180,6 +180,7 @@ Widget _buildHeader(
         Expanded(
           child: Text(
             title,
+            overflow: TextOverflow.ellipsis,
             style: theme.textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.w700,
               color: contentColor,
@@ -371,8 +372,6 @@ class MetricCard extends StatelessWidget {
         children: <Widget>[
           Text(
             label,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
             style: theme.textTheme.labelMedium?.copyWith(
               color: labelColor,
               fontWeight: FontWeight.w600,
@@ -386,7 +385,6 @@ class MetricCard extends StatelessWidget {
               alignment: Alignment.centerLeft,
               child: Text(
                 value,
-                softWrap: false,
                 style: (emphasize ? theme.textTheme.titleLarge : theme.textTheme.titleMedium)?.copyWith(
                   color: valueColor,
                   fontWeight: emphasize ? FontWeight.w800 : FontWeight.w700,

@@ -255,10 +255,10 @@ Based on review of `copilot-requirements.md` vs current codebase implementation 
 - [x] Add explicit visual treatment for timers that completed while the app was not actively notifying the user
 
 ### Accessibility
-- [ ] Verify text contrast and progress-indicator contrast
-- [ ] Ensure controls have sufficiently large touch targets for quick clinical use
-- [ ] Verify support for larger text sizes and layout resilience
-- [ ] Support for Dark mode: fixed light, fixed dark or device default setting.
+- [x] Verify text contrast and progress-indicator contrast
+- [x] Ensure controls have sufficiently large touch targets for quick clinical use
+- [x] Verify support for larger text sizes and layout resilience
+- [x] Support for Dark mode: fixed light, fixed dark or device default setting.
 
 ### Settings
 - [x] Add settings page accessible from main list app bar

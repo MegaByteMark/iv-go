@@ -20,7 +20,7 @@ class InfusionRow extends StatelessWidget {
       timer: timer,
       trailingWidget: _ActionMenuButton(
         tooltip: 'More Actions',
-        foregroundColor: colorScheme.onSurface,
+        foregroundColor: isRecoveredOverdue ? colorScheme.onErrorContainer : colorScheme.onSurface,
         backgroundColor: isRecoveredOverdue ? colorScheme.error.withValues(alpha: 0.08) : colorScheme.surface,
         onSelected: (_InfusionRowAction action) {
           switch (action) {
@@ -166,7 +166,7 @@ class _ActionMenuButton extends StatelessWidget {
       ),
       child: PopupMenuButton<_InfusionRowAction>(
         tooltip: tooltip,
-        padding: const EdgeInsets.all(8),
+        padding: const EdgeInsets.all(12),
         icon: Icon(Icons.more_vert, color: foregroundColor),
         itemBuilder: itemBuilder,
         onSelected: onSelected,
