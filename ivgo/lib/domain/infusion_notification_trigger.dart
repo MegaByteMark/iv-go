@@ -1,0 +1,4 @@
+enum InfusionNotificationTrigger {
+  beforeEnd,
+  afterEnd
+}
