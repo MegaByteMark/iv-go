@@ -10,6 +10,7 @@ import 'package:ivgo/pages/infusion_list_controller.dart';
 import 'package:ivgo/repositories/disclaimer_acceptance_repository.dart';
 import 'package:ivgo/repositories/infusion_timer_repository.dart';
 import 'package:ivgo/repositories/theme_repository.dart';
+import 'package:ivgo/services/lifecycle_coordinator.dart';
 import 'package:ivgo/services/notification_permission_status.dart';
 import 'package:ivgo/services/notification_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -655,9 +656,13 @@ void main() {
       InfusionCharacteristics(volume: 1, dropFactor: 20, flowRate: 1200),
       nowProvider: () => now,
     );
+    final FakeNotificationService fakeNotificationService = FakeNotificationService();
     final InfusionListController controller = InfusionListController(
-      timerRepository: FakeInfusionTimerRepository(<InfusionTimer>[timer]),
-      notificationService: FakeNotificationService(),
+      lifecycleCoordinator: LifecycleCoordinator(
+        timerRepository: FakeInfusionTimerRepository(<InfusionTimer>[timer]),
+        notificationService: fakeNotificationService,
+      ),
+      notificationService: fakeNotificationService,
     );
 
     addTearDown(controller.dispose);

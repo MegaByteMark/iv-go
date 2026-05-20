@@ -1,5 +1,5 @@
 class InfusionCharacteristics {
-  late double volume, dropFactor, flowRate;
+  double volume, dropFactor, flowRate;
 
   InfusionCharacteristics({
     this.volume = 0.0,

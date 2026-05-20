@@ -277,12 +277,12 @@ Based on review of `copilot-requirements.md` vs current codebase implementation 
 ### Service Boundaries
 - [x] Extract persistence logic out of the page widget into a small repository or storage service around `shared_preferences`
 - [x] Introduce a notification service rather than coupling notification behavior directly into UI code
-- [ ] Introduce a small lifecycle coordinator or equivalent to own restore, reconciliation, and notification rescheduling behavior
+- [x] Introduce a small lifecycle coordinator or equivalent to own restore, reconciliation, and notification rescheduling behavior
 
 ### Domain Model Cleanup
-- [ ] Reduce reliance on `late` and nullable timer fields where clearer defaults or explicit state would make behavior safer
-- [ ] Make persisted timer data structures easier to reason about and version if the model evolves
-- [ ] Keep flow-calculation rules documented close to the domain logic and covered by tests rather than comments alone
+- [x] Reduce reliance on `late` and nullable timer fields where clearer defaults or explicit state would make behavior safer
+- [x] Make persisted timer data structures easier to reason about and version if the model evolves
+- [x] Keep flow-calculation rules documented close to the domain logic and covered by tests rather than comments alone
 
 ---
 

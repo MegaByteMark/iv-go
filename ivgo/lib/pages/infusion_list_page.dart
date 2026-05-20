@@ -10,6 +10,7 @@ import 'package:ivgo/repositories/disclaimer_acceptance_repository.dart';
 import 'package:ivgo/repositories/first_launch_repository.dart';
 import 'package:ivgo/repositories/infusion_timer_repository.dart';
 import 'package:ivgo/repositories/theme_repository.dart';
+import 'package:ivgo/services/lifecycle_coordinator.dart';
 import 'package:ivgo/services/notification_permission_status.dart';
 import 'package:gap/gap.dart';
 import 'package:ivgo/services/notification_service.dart';
@@ -52,7 +53,10 @@ class _InfusionListPageState extends State<InfusionListPage> with WidgetsBinding
   }
 
   late final InfusionListController _controllerInstance = InfusionListController(
-    timerRepository: widget._timerRepository,
+    lifecycleCoordinator: LifecycleCoordinator(
+      timerRepository: widget._timerRepository,
+      notificationService: widget.notificationService,
+    ),
     notificationService: widget.notificationService,
   );
 
@@ -69,8 +73,8 @@ class _InfusionListPageState extends State<InfusionListPage> with WidgetsBinding
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    _controller.dispose();
     super.dispose();
+    _controller.dispose();
   }
 
   @override

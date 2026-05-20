@@ -10,6 +10,7 @@ import 'package:ivgo/repositories/disclaimer_acceptance_repository.dart';
 import 'package:ivgo/repositories/first_launch_repository.dart';
 import 'package:ivgo/repositories/infusion_timer_repository.dart';
 import 'package:ivgo/repositories/theme_repository.dart';
+import 'package:ivgo/services/lifecycle_coordinator.dart';
 import 'package:ivgo/services/notification_service.dart';
 
 Future<void> main() async {
@@ -138,7 +139,10 @@ class _StartupGateState extends State<_StartupGate> {
   void initState() {
     super.initState();
     _infusionListController = InfusionListController(
-      timerRepository: InfusionTimerRepository(),
+      lifecycleCoordinator: LifecycleCoordinator(
+        timerRepository: InfusionTimerRepository(),
+        notificationService: widget.notificationService,
+      ),
       notificationService: widget.notificationService,
     );
     _infusionListController.initialize();
@@ -147,8 +151,8 @@ class _StartupGateState extends State<_StartupGate> {
 
   @override
   void dispose() {
-    _infusionListController.dispose();
     super.dispose();
+    _infusionListController.dispose();
   }
 
   @override

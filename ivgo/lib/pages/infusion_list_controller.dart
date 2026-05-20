@@ -3,18 +3,18 @@ import 'dart:async';
 import 'package:flutter/widgets.dart';
 import 'package:ivgo/domain/infusion_characteristics.dart';
 import 'package:ivgo/domain/infusion_timer.dart';
-import 'package:ivgo/repositories/infusion_timer_repository.dart';
+import 'package:ivgo/services/lifecycle_coordinator.dart';
 import 'package:ivgo/services/notification_service.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 
 class InfusionListController {
   InfusionListController({
-    required InfusionTimerRepository timerRepository,
+    required LifecycleCoordinator lifecycleCoordinator,
     required NotificationService notificationService,
-  })  : _timerRepository = timerRepository,
+  })  : _lifecycleCoordinator = lifecycleCoordinator,
         _notificationService = notificationService;
 
-  final InfusionTimerRepository _timerRepository;
+  final LifecycleCoordinator _lifecycleCoordinator;
   final NotificationService _notificationService;
   final Signal<List<InfusionTimer>> _infusionTimers = signal(
     <InfusionTimer>[],
@@ -23,6 +23,7 @@ class InfusionListController {
 
   Timer? _refreshTimer;
   bool _disposed = false;
+  List<InfusionTimer> _cachedTimers = <InfusionTimer>[];
 
   ReadonlySignal<List<InfusionTimer>> get infusionTimers => _infusionTimers;
 
@@ -30,15 +31,8 @@ class InfusionListController {
 
   Future<void> initialize() async {
     _manageRefreshTimer();
-    await loadState();
-  }
 
-  Future<void> loadState() async {
-    final List<InfusionTimer> restoredTimers = await _timerRepository.loadTimers();
-
-    for (final timer in restoredTimers) {
-      timer.onRestore();
-    }
+    final List<InfusionTimer> restoredTimers = await _lifecycleCoordinator.onStartup();
 
     if (_disposed) {
       return;
@@ -46,8 +40,6 @@ class InfusionListController {
 
     _replaceInfusionTimers(restoredTimers);
     _manageRefreshTimer();
-
-    await _syncAllTimerNotifications();
   }
 
   Future<void> saveState() async {
@@ -55,15 +47,13 @@ class InfusionListController {
       return;
     }
 
-    await _timerRepository.saveTimers(currentTimers);
+    await _lifecycleCoordinator.saveTimers(currentTimers);
   }
 
   void handleLifecycleStateChanged(AppLifecycleState state) {
     switch (state) {
       case AppLifecycleState.resumed:
-        for (final timer in currentTimers) {
-          timer.reconcile();
-        }
+        _lifecycleCoordinator.onForeground(currentTimers);
 
         if (_disposed) {
           return;
@@ -71,12 +61,11 @@ class InfusionListController {
 
         _manageRefreshTimer();
         _refreshInfusionTimers();
-        unawaited(_syncAllTimerNotifications());
       case AppLifecycleState.inactive:
       case AppLifecycleState.hidden:
       case AppLifecycleState.paused:
       case AppLifecycleState.detached:
-        unawaited(saveState());
+        unawaited(_lifecycleCoordinator.onBackground(currentTimers));
     }
   }
 
@@ -161,9 +150,9 @@ class InfusionListController {
 
   void dispose() {
     _disposed = true;
-    unawaited(_timerRepository.saveTimers(currentTimers));
     _refreshTimer?.cancel();
     _refreshTimer = null;
+    unawaited(_lifecycleCoordinator.saveTimers(_cachedTimers));
     _infusionTimers.dispose();
   }
 
@@ -172,6 +161,7 @@ class InfusionListController {
       return;
     }
 
+    _cachedTimers = timers;
     _infusionTimers.value = timers;
   }
 
@@ -188,6 +178,12 @@ class InfusionListController {
 
     if (hasRunningTimers) {
       _refreshTimer ??= Timer.periodic(const Duration(seconds: 1), (timer) {
+        if (_disposed) {
+          timer.cancel();
+          _refreshTimer = null;
+          return;
+        }
+
         for (final infusionTimer in currentTimers) {
           infusionTimer.reconcile();
         }
@@ -220,21 +216,6 @@ class InfusionListController {
     }
 
     await _notificationService.scheduleMilestonesForTimer(timer);
-    await saveState();
-  }
-
-  Future<void> _syncAllTimerNotifications() async {
-    if (_disposed) {
-      return;
-    }
-
-    for (final timer in currentTimers) {
-      await _notificationService.scheduleMilestonesForTimer(
-        timer,
-        suppressAlreadyDeliveredBeforeEndMilestones: true,
-      );
-    }
-
     await saveState();
   }
 

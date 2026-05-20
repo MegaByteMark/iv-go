@@ -4,6 +4,8 @@ import 'package:ivgo/domain/infusion_notification_trigger.dart';
 import 'package:ivgo/domain/infusion_timer_status.dart';
 
 class InfusionTimer {
+  static const int _serializationVersion = 1;
+
   InfusionCharacteristics _initialCharacteristics;
   final DateTime Function() _nowProvider;
   final List<_InfusionPhase> _phases;
@@ -17,9 +19,13 @@ class InfusionTimer {
   String title;
   InfusionCharacteristics characteristics;
   bool suppressAfterEndMilestones = false;
-  double infusedVolume = 0;
-  Duration durationInSeconds = Duration.zero;
-  Duration remainingSeconds = Duration.zero;
+  double _infusedVolume = 0;
+  Duration _durationInSeconds = Duration.zero;
+  Duration _remainingSeconds = Duration.zero;
+
+  double get infusedVolume => _infusedVolume;
+  Duration get durationInSeconds => _durationInSeconds;
+  Duration get remainingSeconds => _remainingSeconds;
   bool get isRunning => _status == InfusionTimerStatus.running;
   bool get isPaused => _status == InfusionTimerStatus.paused;
   bool get isEnded => _status == InfusionTimerStatus.ended || _status == InfusionTimerStatus.recoveredOverdue;
@@ -63,7 +69,11 @@ class InfusionTimer {
         _completedAt = _parseDateTime(json['completedAt']),
         _handledMilestoneKeys = (json['handledMilestoneKeys'] as List<dynamic>?)?.map((e) => e as String).toSet() ?? <String>{},
         suppressAfterEndMilestones = json['suppressAfterEndMilestones'] as bool? ?? false,
-        _phases = _parsePhases(json) {
+        _phases = _parsePhases(json),
+        assert(() {
+          final int? version = json['version'] as int?;
+          return version == null || version <= _serializationVersion;
+        }(), 'Unsupported serialization version') {
     _refreshComputedFields();
   }
 
@@ -79,6 +89,7 @@ class InfusionTimer {
     reconcile();
 
     return {
+      'version': _serializationVersion,
       'id': id,
       'title': title,
       'characteristics': characteristics.toJson(),
@@ -289,14 +300,14 @@ class InfusionTimer {
   }
 
   void _refreshComputedFields() {
-    durationInSeconds = _computeInfusionDurationInSeconds(characteristics.volume);
+    _durationInSeconds = _computeInfusionDurationInSeconds(characteristics.volume);
     final double calculatedInfusedVolume = _calculateInfusedVolumeMl();
     final double cappedInfusedVolume = calculatedInfusedVolume > characteristics.volume ? characteristics.volume : calculatedInfusedVolume;
 
-    infusedVolume = isEnded ? characteristics.volume : cappedInfusedVolume;
+    _infusedVolume = isEnded ? characteristics.volume : cappedInfusedVolume;
 
-    final double remainingVolume = characteristics.volume - infusedVolume;
-    remainingSeconds = _computeInfusionDurationInSeconds(
+    final double remainingVolume = characteristics.volume - _infusedVolume;
+    _remainingSeconds = _computeInfusionDurationInSeconds(
       remainingVolume > 0 ? remainingVolume : 0,
     );
   }
@@ -315,6 +326,10 @@ class InfusionTimer {
     return total;
   }
 
+  /// Total infusion time for [targetVolume] mL at the current drop factor and flow rate.
+  ///
+  /// Formula: `(targetVolume * dropFactor / flowRate) * 60 seconds`.
+  /// Returns zero for non-positive volumes.
   Duration _computeInfusionDurationInSeconds(double targetVolume) {
     if (targetVolume > 0) {
       return Duration(
@@ -325,6 +340,10 @@ class InfusionTimer {
     return Duration.zero;
   }
 
+  /// Volume infused (mL) over [secondsAtRateGttsPerMin] at [rateInGttsPerMin] gtts/min
+  /// with [gttsPerMl] as the drop factor.
+  ///
+  /// Formula: `(seconds / 60) * (rate / dropFactor)`.
   double _computeInfusedVolumeInMl(
     int secondsAtRateGttsPerMin,
     double rateInGttsPerMin,
