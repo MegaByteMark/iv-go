@@ -12,6 +12,7 @@ import 'package:ivgo/repositories/infusion_timer_repository.dart';
 import 'package:ivgo/repositories/theme_repository.dart';
 import 'package:ivgo/services/lifecycle_coordinator.dart';
 import 'package:ivgo/services/notification_service.dart';
+import 'package:ivgo/widgets/splash_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -161,11 +162,7 @@ class _StartupGateState extends State<_StartupGate> {
     final bool? hasSeenOnboarding = _hasSeenOnboarding;
 
     if (hasAcceptedDisclaimer == null || hasSeenOnboarding == null) {
-      return const Scaffold(
-        body: Center(
-          child: CircularProgressIndicator(),
-        ),
-      );
+      return const SplashScreen();
     }
 
     if (!hasAcceptedDisclaimer) {
@@ -200,12 +197,19 @@ class _StartupGateState extends State<_StartupGate> {
     bool hasSeenOnboarding = false;
 
     try {
+      final stopwatch = Stopwatch()..start();
       final results = await Future.wait([
         widget.disclaimerAcceptanceRepository.hasAcceptedDisclaimer().timeout(_loadTimeout, onTimeout: () => false),
         widget.firstLaunchRepository.hasSeenOnboarding().timeout(_loadTimeout, onTimeout: () => false),
       ]);
       hasAcceptedDisclaimer = results[0];
       hasSeenOnboarding = results[1];
+
+      final elapsed = stopwatch.elapsed;
+      final minSplashDuration = const Duration(milliseconds: 1800);
+      if (elapsed < minSplashDuration) {
+        await Future.delayed(minSplashDuration - elapsed);
+      }
     } catch (_) {
       hasAcceptedDisclaimer = false;
       hasSeenOnboarding = false;

@@ -721,7 +721,7 @@ void main() {
     await addTimer(tester);
 
     await selectInfusionAction(tester, 'Remove');
-    await tester.tap(find.widgetWithText(TextButton, 'Remove'));
+    await tester.tap(find.widgetWithText(FilledButton, 'Remove'));
     await tester.pumpAndSettle();
 
     expect(fakeNotificationService.cancelledMilestoneCalls, 1);
@@ -852,7 +852,7 @@ void main() {
     await selectInfusionAction(tester, 'Resume');
 
     await selectInfusionAction(tester, 'Remove');
-    await tester.tap(find.widgetWithText(TextButton, 'Remove'));
+    await tester.tap(find.widgetWithText(FilledButton, 'Remove'));
     await tester.pumpAndSettle();
 
     expect(find.text('Saline'), findsNothing);
@@ -884,7 +884,7 @@ void main() {
     await selectInfusionAction(tester, 'Resume');
 
     await selectInfusionAction(tester, 'Remove');
-    await tester.tap(find.widgetWithText(TextButton, 'Remove'));
+    await tester.tap(find.widgetWithText(FilledButton, 'Remove'));
     await tester.pumpAndSettle();
 
     expect(find.text('Dextrose'), findsNothing);
