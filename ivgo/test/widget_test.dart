@@ -203,7 +203,7 @@ void main() {
       settle: false,
     );
 
-    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    expect(find.text('IV Go'), findsOneWidget);
 
     await tester.pump(const Duration(seconds: 4));
     await tester.pumpAndSettle();
