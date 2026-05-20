@@ -207,6 +207,7 @@ class _StartupGateState extends State<_StartupGate> {
 
       final elapsed = stopwatch.elapsed;
       final minSplashDuration = const Duration(milliseconds: 1800);
+
       if (elapsed < minSplashDuration) {
         await Future.delayed(minSplashDuration - elapsed);
       }

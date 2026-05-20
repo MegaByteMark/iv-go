@@ -288,7 +288,7 @@ Based on review of `copilot-requirements.md` vs current codebase implementation 
 
 ## Low Priority
 ### UI Tweaks
-- [ ] Fix up app icon
+- [x] Fix up app icon
 - [x] Fix up app splash screen
 
 ### DevOps

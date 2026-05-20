@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -9,8 +7,9 @@ class SplashScreen extends StatefulWidget {
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderStateMixin {
+class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMixin {
   late final AnimationController _controller;
+  late final AnimationController _heartbeatController;
 
   @override
   void initState() {
@@ -19,184 +18,116 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
       vsync: this,
       duration: const Duration(seconds: 3),
     )..forward();
+    _heartbeatController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 2),
+    )..repeat();
   }
 
   @override
   void dispose() {
     _controller.dispose();
+    _heartbeatController.dispose();
     super.dispose();
   }
 
-  double _crosshairProgress(double value) => (value * 2.5).clamp(0, 1);
+  double _iconFadeProgress(double value) => (value * 2.5).clamp(0, 1);
 
-  double _heartbeatProgress(double value) => ((value - 0.15) * 1.8).clamp(0, 1);
-
-  double _textOpacity(double value) => ((value - 0.6) * 3).clamp(0, 1);
+  double _textOpacity(double value) => ((value - 0.2) * 2.5).clamp(0, 1);
 
   double _textOffset(double value) {
-    final p = ((value - 0.6) * 3).clamp(0, 1);
-    return 20.0 * (1 - p);
+    final p = ((value - 0.2) * 2.5).clamp(0, 1);
+    return 16.0 * (1 - p);
   }
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final isDark = colorScheme.brightness == Brightness.dark;
-    final bgColor = isDark ? const Color(0xFF0D2137) : const Color(0xFFB3E5FC);
-    final fgColor = isDark ? Colors.white70 : Colors.white;
-    final accentColor = isDark ? Colors.lightBlue.shade200 : Colors.white;
+    final bgColor = isDark ? const Color(0xFF1565C0) : const Color(0xFFB3E5FC);
+    final fgColor = Colors.white;
+    final accentColor = isDark ? Colors.white70 : Colors.white;
 
     return Scaffold(
       backgroundColor: bgColor,
       body: SafeArea(
         child: AnimatedBuilder(
-          animation: _controller,
+          animation: Listenable.merge([_controller, _heartbeatController]),
           builder: (context, _) {
             final value = _controller.value;
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  SizedBox(
-                    width: 120,
-                    height: 120,
-                    child: CustomPaint(
-                      painter: _CrosshairPainter(
-                        progress: _crosshairProgress(value),
-                        color: fgColor,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 40),
-                  SizedBox(
-                    width: 220,
-                    height: 60,
-                    child: CustomPaint(
-                      painter: _HeartbeatPainter(
-                        progress: _heartbeatProgress(value),
-                        color: accentColor,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 32),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 32),
+            return Column(
+              children: [
+                Expanded(
+                  child: Center(
                     child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Opacity(
-                          opacity: _textOpacity(value),
-                          child: Transform.translate(
-                            offset: Offset(0, _textOffset(value)),
-                            child: Text(
-                              'IV Go',
-                              style: TextStyle(
-                                color: fgColor,
-                                fontSize: 36,
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 2,
-                              ),
-                            ),
-                          ),
+                          opacity: _iconFadeProgress(value),
+                          child: Icon(Icons.vaccines, size: 120, color: fgColor),
                         ),
-                        const SizedBox(height: 8),
-                        Opacity(
-                          opacity: _textOpacity(value),
-                          child: Transform.translate(
-                            offset: Offset(0, _textOffset(value)),
-                            child: Text(
-                              'Infusion Timer',
-                              style: TextStyle(
-                                color: fgColor.withValues(alpha: 0.7),
-                                fontSize: 14,
-                                letterSpacing: 4,
+                        const SizedBox(height: 16),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 32),
+                          child: Column(
+                            children: [
+                              Opacity(
+                                opacity: _textOpacity(value),
+                                child: Transform.translate(
+                                  offset: Offset(0, _textOffset(value)),
+                                  child: Text(
+                                    'IV Go',
+                                    style: TextStyle(
+                                      color: fgColor,
+                                      fontSize: 36,
+                                      fontWeight: FontWeight.bold,
+                                      letterSpacing: 2,
+                                    ),
+                                  ),
+                                ),
                               ),
-                            ),
+                              const SizedBox(height: 8),
+                              Opacity(
+                                opacity: _textOpacity(value),
+                                child: Transform.translate(
+                                  offset: Offset(0, _textOffset(value)),
+                                  child: Text(
+                                    'Infusion Timer',
+                                    style: TextStyle(
+                                      color: fgColor.withValues(alpha: 0.7),
+                                      fontSize: 14,
+                                      letterSpacing: 4,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ],
                     ),
                   ),
-                  const SizedBox(height: 64),
-                  SizedBox(
-                    width: 24,
-                    height: 24,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        fgColor.withValues(alpha: 0.5),
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 48),
+                  child: SizedBox(
+                    width: 220,
+                    height: 60,
+                    child: CustomPaint(
+                      painter: _HeartbeatPainter(
+                        progress: _heartbeatController.value,
+                        color: accentColor,
                       ),
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             );
           },
         ),
       ),
     );
   }
-}
-
-class _CrosshairPainter extends CustomPainter {
-  _CrosshairPainter({
-    required this.progress,
-    required this.color,
-  });
-
-  final double progress;
-  final Color color;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color.withValues(alpha: progress)
-      ..strokeWidth = 3.0
-      ..strokeCap = StrokeCap.round
-      ..style = PaintingStyle.stroke;
-
-    final center = Offset(size.width / 2, size.height / 2);
-    final armLength = size.width * 0.35 * progress;
-    final gap = size.width * 0.08;
-
-    final paint2 = Paint()
-      ..color = color.withValues(alpha: (progress * 0.3).clamp(0, 1))
-      ..strokeWidth = 1.0
-      ..style = PaintingStyle.stroke;
-
-    final pulseRadius = size.width * 0.45 * (1 + 0.08 * math.sin(progress * math.pi * 6));
-
-    canvas.drawCircle(center, pulseRadius, paint2);
-
-    canvas.drawLine(
-      Offset(center.dx - armLength, center.dy),
-      Offset(center.dx - gap, center.dy),
-      paint,
-    );
-    canvas.drawLine(
-      Offset(center.dx + gap, center.dy),
-      Offset(center.dx + armLength, center.dy),
-      paint,
-    );
-    canvas.drawLine(
-      Offset(center.dx, center.dy - armLength),
-      Offset(center.dx, center.dy - gap),
-      paint,
-    );
-    canvas.drawLine(
-      Offset(center.dx, center.dy + gap),
-      Offset(center.dx, center.dy + armLength),
-      paint,
-    );
-
-    final circlePaint = Paint()
-      ..color = color.withValues(alpha: progress * 0.15)
-      ..style = PaintingStyle.fill;
-
-    canvas.drawCircle(center, size.width * 0.12, circlePaint);
-  }
-
-  @override
-  bool shouldRepaint(_CrosshairPainter oldDelegate) => oldDelegate.progress != progress;
 }
 
 class _HeartbeatPainter extends CustomPainter {
