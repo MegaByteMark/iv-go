@@ -292,8 +292,8 @@ Based on review of `copilot-requirements.md` vs current codebase implementation 
 - [ ] Fix up app splash screen
 
 ### DevOps
-- [ ] Implement basic CI/CD for this repository to validate quality of merges into develop and form the basis of good PR's.
-- [ ] Create full manual test plan
+- [x] Implement basic CI/CD for this repository to validate quality of merges into develop and form the basis of good PR's.
+- [x] Create full manual test plan
 
 ---
 

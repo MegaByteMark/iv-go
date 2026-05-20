@@ -1,0 +1,24 @@
+name: PR to develop
+
+on:
+  pull_request:
+    branches: [develop]
+
+jobs:
+  analyze-and-test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ivgo
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          architecture: x64
+
+      - run: flutter pub get
+      - run: flutter analyze
+      - run: flutter test
