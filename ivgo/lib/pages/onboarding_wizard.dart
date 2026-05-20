@@ -1,0 +1,689 @@
+import 'package:flutter/material.dart';
+import 'package:ivgo/domain/infusion_characteristics.dart';
+import 'package:ivgo/pages/infusion_list_controller.dart';
+import 'package:ivgo/services/notification_permission_status.dart';
+import 'package:ivgo/services/notification_service.dart';
+import 'package:ivgo/widgets/onboarding/wizard_navigation_button.dart';
+import 'package:ivgo/widgets/onboarding/wizard_info_text.dart';
+import 'package:ivgo/widgets/onboarding/wizard_page_indicator.dart';
+import 'package:ivgo/widgets/timer_card_base.dart';
+
+class OnboardingWizard extends StatefulWidget {
+  const OnboardingWizard({
+    super.key,
+    required this.controller,
+    required this.onComplete,
+    required this.onSkip,
+    required this.notificationService,
+  });
+
+  final InfusionListController controller;
+  final VoidCallback onComplete;
+  final VoidCallback onSkip;
+  final NotificationService notificationService;
+
+  @override
+  State<OnboardingWizard> createState() => _OnboardingWizardState();
+}
+
+class _OnboardingWizardState extends State<OnboardingWizard> {
+  final PageController _pageController = PageController();
+  int _currentPage = 0;
+
+  final TextEditingController _titleController = TextEditingController(text: 'IV Infusion #1');
+  final TextEditingController _volumeController = TextEditingController(text: '500');
+  final TextEditingController _dropFactorController = TextEditingController(text: '20');
+  final TextEditingController _flowRateController = TextEditingController(text: '30');
+
+  final FocusNode _titleFocus = FocusNode();
+  final FocusNode _volumeFocus = FocusNode();
+  final FocusNode _dropFactorFocus = FocusNode();
+  final FocusNode _flowRateFocus = FocusNode();
+
+  bool _titleFieldAnimated = false;
+  bool _volumeFieldAnimated = false;
+  bool _dropFactorFieldAnimated = false;
+  bool _flowRateFieldAnimated = false;
+
+  NotificationPermissionStatus _notificationStatus = NotificationPermissionStatus.notDetermined;
+  bool _notificationGranted = false;
+  bool _hasRequestedPermission = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _notificationStatus = widget.notificationService.permissionStatus.value;
+    _notificationGranted = _notificationStatus == NotificationPermissionStatus.granted;
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    _titleController.dispose();
+    _volumeController.dispose();
+    _dropFactorController.dispose();
+    _flowRateController.dispose();
+    _titleFocus.dispose();
+    _volumeFocus.dispose();
+    _dropFactorFocus.dispose();
+    _flowRateFocus.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        actions: <Widget>[
+          TextButton(
+            onPressed: widget.onSkip,
+            style: TextButton.styleFrom(
+              minimumSize: const Size(48, 48),
+            ),
+            child: const Text('Skip'),
+          ),
+        ],
+      ),
+      body: SafeArea(
+        child: Column(
+          children: <Widget>[
+            Expanded(
+              child: PageView(
+                controller: _pageController,
+                physics: const NeverScrollableScrollPhysics(),
+                onPageChanged: _onPageChanged,
+                children: <Widget>[
+                  _buildWelcomePage(),
+                  _buildNamePage(),
+                  _buildVolumePage(),
+                  _buildFlowRatePage(),
+                  _buildNotificationsPage(),
+                  _buildCreatePage(),
+                  _buildMenuPage(),
+                ],
+              ),
+            ),
+            _buildPageIndicators(),
+            _buildNavigationButtons(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _onPageChanged(int page) {
+    setState(() {
+      _currentPage = page;
+    });
+
+    _animateFieldIfNeeded(page);
+
+    if (page == 4) {
+      _refreshNotificationStatus();
+    }
+  }
+
+  Future<void> _refreshNotificationStatus() async {
+    await widget.notificationService.refreshPermissionStatus();
+
+    if (mounted) {
+      setState(() {
+        _notificationStatus = widget.notificationService.permissionStatus.value;
+        _notificationGranted = _notificationStatus == NotificationPermissionStatus.granted;
+        _hasRequestedPermission = false;
+      });
+    }
+  }
+
+  void _animateFieldIfNeeded(int page) {
+    if (page == 1 && !_titleFieldAnimated) {
+      _titleFieldAnimated = true;
+
+      Future.delayed(const Duration(milliseconds: 300), () {
+        if (mounted) _titleFocus.requestFocus();
+      });
+    } else if (page == 2 && !_volumeFieldAnimated) {
+      _volumeFieldAnimated = true;
+
+      Future.delayed(const Duration(milliseconds: 300), () {
+        if (mounted) _volumeFocus.requestFocus();
+      });
+    } else if (page == 3 && !_dropFactorFieldAnimated) {
+      _dropFactorFieldAnimated = true;
+
+      Future.delayed(const Duration(milliseconds: 300), () {
+        if (mounted) _dropFactorFocus.requestFocus();
+      });
+    } else if (page == 4 && !_flowRateFieldAnimated) {
+      _flowRateFieldAnimated = true;
+
+      Future.delayed(const Duration(milliseconds: 300), () {
+        if (mounted) _flowRateFocus.requestFocus();
+      });
+    }
+  }
+
+  Widget _buildWelcomePage() {
+    return Padding(
+      padding: const EdgeInsets.all(32),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: <Widget>[
+          Icon(
+            Icons.vaccines,
+            size: 120,
+            color: Theme.of(context).colorScheme.primary,
+          ),
+          const SizedBox(height: 48),
+          Text(
+            'Welcome to IV Go',
+            style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            "Let's set up your first infusion timer",
+            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 24),
+          Text(
+            'Track your IV infusions with precision and ease',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNamePage() {
+    return _buildFormPage(
+      title: 'Name Your Infusion',
+      description: 'Give your infusion a descriptive name to easily identify it later.',
+      icon: Icons.label_outline,
+      child: Column(
+        children: <Widget>[
+          _AnimatedTextField(
+            focusNode: _titleFocus,
+            controller: _titleController,
+            label: 'Infusion Name',
+            hint: 'e.g., IV Infusion #1',
+            onChanged: (_) => setState(() {}),
+          ),
+          const SizedBox(height: 16),
+          WizardInfoText(label: 'The title helps you identify this infusion among others.'),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildVolumePage() {
+    return _buildFormPage(
+      title: 'Set Your Target',
+      description: 'Enter the total volume of fluid to be infused.',
+      icon: Icons.water_drop_outlined,
+      child: Column(
+        children: <Widget>[
+          _AnimatedTextField(
+            focusNode: _volumeFocus,
+            controller: _volumeController,
+            label: 'Target Volume (ml)',
+            hint: 'e.g., 500',
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            onChanged: (_) => setState(() {}),
+          ),
+          const SizedBox(height: 16),
+          WizardInfoText(label: 'Typical volumes range from 100ml to 1000ml depending on the treatment.'),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFlowRatePage() {
+    return _buildFormPage(
+      title: 'Configure Flow Rate',
+      description: 'Set the drop factor and flow rate for your infusion.',
+      icon: Icons.speed_outlined,
+      child: Column(
+        children: <Widget>[
+          _AnimatedTextField(
+            focusNode: _dropFactorFocus,
+            controller: _dropFactorController,
+            label: 'Drop Factor (gtts/ml)',
+            hint: 'e.g., 20',
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            onChanged: (_) => setState(() {}),
+          ),
+          const SizedBox(height: 16),
+          _AnimatedTextField(
+            focusNode: _flowRateFocus,
+            controller: _flowRateController,
+            label: 'Flow Rate (gtts/min)',
+            hint: 'e.g., 30',
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            onChanged: (_) => setState(() {}),
+          ),
+          const SizedBox(height: 16),
+          WizardInfoText(
+            label: 'gtts/min (drops per minute) determines how fast the fluid flows. Check your IV set for the drop factor.',
+            icon: Icon(
+              Icons.lightbulb_outline,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+              size: 20,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNotificationsPage() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(32),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: <Widget>[
+          Icon(
+            _notificationGranted ? Icons.notifications_active : Icons.notifications_off_outlined,
+            size: 48,
+            color: Theme.of(context).colorScheme.primary,
+          ),
+          const SizedBox(height: 24),
+          Text(
+            'Stay Notified',
+            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Get alerts for important milestones',
+            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 32),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                WizardInfoText(label: 'Enable notifications to receive alerts when your timer reaches important milestones.'),
+                if (_notificationGranted) ...<Widget>[
+                  WizardInfoText(
+                    label: 'Notifications enabled! You\'ll receive milestone alerts even when the app is closed.',
+                    color: Theme.of(context).colorScheme.primary,
+                    icon: Icon(
+                      Icons.check_circle,
+                      color: Theme.of(context).colorScheme.primary,
+                      size: 20,
+                    ),
+                  ),
+                ],
+                if (_notificationStatus == NotificationPermissionStatus.denied) ...<Widget>[
+                  WizardInfoText(
+                    label: 'Notifications are turned off. Background alerts will not function. Re-enable notifications in system settings and monitor timers in-app until alerts are restored.',
+                    color: Theme.of(context).colorScheme.error,
+                    icon: Icon(Icons.warning_amber_outlined, color: Theme.of(context).colorScheme.error, size: 20),
+                  ),
+                ],
+                if (_notificationStatus == NotificationPermissionStatus.unavailable) ...<Widget>[
+                  WizardInfoText(
+                    label: 'Notifications are unavailable on this device or platform. Background alerts will not function. Monitor timers in-app.',
+                    color: Theme.of(context).colorScheme.error,
+                    icon: Icon(Icons.warning_amber_outlined, color: Theme.of(context).colorScheme.error, size: 20),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          if (_notificationStatus == NotificationPermissionStatus.notDetermined && !_hasRequestedPermission) ...<Widget>[
+            const SizedBox(height: 24),
+            FilledButton.tonal(
+              onPressed: _requestNotificationPermission,
+              style: FilledButton.styleFrom(
+                minimumSize: const Size(double.infinity, 48),
+              ),
+              child: const Text('Enable Notifications'),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Future<void> _requestNotificationPermission() async {
+    setState(() {
+      _hasRequestedPermission = true;
+    });
+
+    await widget.notificationService.requestPermissions();
+    await widget.notificationService.refreshPermissionStatus();
+
+    if (mounted) {
+      setState(() {
+        _notificationStatus = widget.notificationService.permissionStatus.value;
+        _notificationGranted = _notificationStatus == NotificationPermissionStatus.granted;
+      });
+
+      if (_notificationGranted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Notifications enabled!'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+
+  Widget _buildCreatePage() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(32),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: <Widget>[
+          Text(
+            'That\'s it!',
+            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Your infusion timer is ready to go',
+            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+          ),
+          const SizedBox(height: 32),
+          TimerCardBase(
+            previewData: _getPreviewData(),
+            showMenuHint: true,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMenuPage() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(32),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: <Widget>[
+          Icon(
+            Icons.check_circle_outline,
+            size: 48,
+            color: Theme.of(context).colorScheme.primary,
+          ),
+          const SizedBox(height: 24),
+          Text(
+            "You're All Set!",
+            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+          ),
+          const SizedBox(height: 32),
+          WizardInfoText(label: 'Tap the menu (⋮) on any timer to edit, pause, or remove it'),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFormPage({
+    required String title,
+    required String description,
+    required IconData icon,
+    required Widget child,
+  }) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(32),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Icon(icon, size: 48, color: Theme.of(context).colorScheme.primary),
+          const SizedBox(height: 24),
+          Text(
+            title,
+            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            description,
+            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+          ),
+          const SizedBox(height: 32),
+          child,
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPageIndicators() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: List<Widget>.generate(7, (int index) {
+          final bool isActive = index == _currentPage;
+
+          return WizardPageIndicator(isActive: isActive, context: context);
+        }),
+      ),
+    );
+  }
+
+  Widget _buildNavigationButtons() {
+    final bool canGoBack = _currentPage > 0;
+    final bool isLastPage = _currentPage == 6;
+
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Row(
+        children: <Widget>[
+          if (canGoBack) WizardNavigationButton(label: 'Back', onPressed: _goBack, filled: false),
+          if (canGoBack) const SizedBox(width: 16),
+          if (!isLastPage) WizardNavigationButton(label: 'Next', onPressed: _goNext, flex: canGoBack ? 1 : 2),
+          if (isLastPage) WizardNavigationButton(label: 'Create Infusion Timer', onPressed: _createTimer),
+        ],
+      ),
+    );
+  }
+
+  void _goBack() {
+    if (_currentPage > 0) {
+      _pageController.previousPage(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
+    }
+  }
+
+  void _goNext() {
+    if (!_validateCurrentPage()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please fill out the required fields to continue.'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+
+      return;
+    }
+
+    if (_currentPage < 6) {
+      _pageController.nextPage(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
+    }
+  }
+
+  bool _validateCurrentPage() {
+    switch (_currentPage) {
+      case 1:
+        return _titleController.text.trim().isNotEmpty;
+      case 2:
+        final volume = double.tryParse(_volumeController.text);
+
+        return volume != null && volume > 0;
+      case 3:
+        final dropFactor = double.tryParse(_dropFactorController.text);
+        final flowRate = double.tryParse(_flowRateController.text);
+
+        return dropFactor != null && dropFactor > 0 && flowRate != null && flowRate > 0;
+      default:
+        return true;
+    }
+  }
+
+  TimerPreviewData _getPreviewData() {
+    return TimerPreviewData(
+      title: _titleController.text.trim().isEmpty ? 'IV Infusion #1' : _titleController.text.trim(),
+      volume: double.tryParse(_volumeController.text) ?? 0,
+      dropFactor: double.tryParse(_dropFactorController.text) ?? 20,
+      flowRate: double.tryParse(_flowRateController.text) ?? 30,
+    );
+  }
+
+  Future<void> _createTimer() async {
+    final characteristics = InfusionCharacteristics(
+      volume: double.tryParse(_volumeController.text) ?? 500,
+      dropFactor: double.tryParse(_dropFactorController.text) ?? 20,
+      flowRate: double.tryParse(_flowRateController.text) ?? 30,
+    );
+
+    final title = _titleController.text.trim().isEmpty ? 'IV Infusion #1' : _titleController.text.trim();
+
+    await widget.controller.addTimer(title: title, characteristics: characteristics);
+    widget.onComplete();
+  }
+}
+
+class _AnimatedTextField extends StatefulWidget {
+  const _AnimatedTextField({
+    required this.focusNode,
+    required this.controller,
+    required this.label,
+    required this.hint,
+    required this.onChanged,
+    this.keyboardType,
+  });
+
+  final FocusNode focusNode;
+  final TextEditingController controller;
+  final String label;
+  final String hint;
+  final ValueChanged<String> onChanged;
+  final TextInputType? keyboardType;
+
+  @override
+  State<_AnimatedTextField> createState() => _AnimatedTextFieldState();
+}
+
+class _AnimatedTextFieldState extends State<_AnimatedTextField> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+  late Animation<double> _opacityAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 600),
+      vsync: this,
+    );
+
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 1.03).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
+    );
+
+    _opacityAnimation = TweenSequence<double>([
+      TweenSequenceItem(
+        tween: Tween<double>(begin: 0.0, end: 1.0).chain(CurveTween(curve: Curves.easeOut)),
+        weight: 50,
+      ),
+      TweenSequenceItem(
+        tween: Tween<double>(begin: 1.0, end: 1.0),
+        weight: 50,
+      ),
+    ]).animate(_controller);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  void didUpdateWidget(_AnimatedTextField oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.focusNode != oldWidget.focusNode && widget.focusNode.hasFocus) {
+      _controller.forward(from: 0);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (BuildContext context, Widget? child) {
+        return Transform.scale(
+          scale: _scaleAnimation.value,
+          child: Opacity(
+            opacity: _opacityAnimation.value.clamp(0.85, 1.0),
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: _controller.isAnimating
+                    ? <BoxShadow>[
+                        BoxShadow(
+                          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
+                          blurRadius: 12,
+                          spreadRadius: 2,
+                        ),
+                      ]
+                    : null,
+              ),
+              child: child,
+            ),
+          ),
+        );
+      },
+      child: TextField(
+        focusNode: widget.focusNode,
+        controller: widget.controller,
+        keyboardType: widget.keyboardType,
+        decoration: InputDecoration(
+          labelText: widget.label,
+          hintText: widget.hint,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          filled: true,
+        ),
+        onChanged: widget.onChanged,
+      ),
+    );
+  }
+}

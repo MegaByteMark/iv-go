@@ -8,7 +8,7 @@ Keep `.github/copilot-instructions.md` short and stable. Put detailed constraint
 
 The purpose of this project is to provide a manual fallback and job aid for healthcare professionals or care workers who need to track infusion progress when automated infusion systems are unavailable or unsuitable.
 
-The application targets mobile devices specifically so the user can keep the device on their person and access timer, notification, and acknowledgement features at all times during care delivery.
+The application is mobile-first so the user can keep the device on their person and access timer, notification, and acknowledgement features at all times during care delivery, while still allowing for supported desktop workstation deployments where the same workflow is needed.
 
 The app is a dashboard of infusion timers displayed in a list. Each timer represents a single infusion and uses standard flow calculations based on:
 
@@ -77,15 +77,16 @@ During an infusion the user must be able to:
 ### Accessibility And Usability
 
 - The app must be simple enough to use with minimal training.
-- The app must remain easy to read and operate in a mobile clinical workflow.
+- The app must remain easy to read and operate in a mobile clinical workflow and on supported desktop workstations.
 - The interface should prioritize at-a-glance readability, clear status, and interactions that are easy to perform quickly.
 - Accessibility considerations such as readable text, clear contrast, and sufficiently large touch targets should be treated as core product requirements rather than polish.
 
 ## Engineering Constraints
 
-- The app is for mobile devices only, specifically Android and iOS devices.
-- Non-mobile targets in the Flutter project are unsupported and should not be treated as part of the delivered product scope.
-- Following Material on Android and Cupertino on iOS is desirable, but a consistent cross-platform interface is acceptable.
+- Supported product targets are Android, iOS, and Windows.
+- macOS may be supported later once desktop notification behavior has been validated end to end.
+- Linux and web are unsupported because their local-notification behavior does not reliably satisfy the required scheduled milestone alerts.
+- Following Material on Android and Cupertino on iOS is desirable, but a consistent cross-platform interface is acceptable. Desktop adaptations should remain simple and clinical rather than introducing a separate design system.
 
 - The app needs to be simple enough to use and understand that it needs minimal training of end users, other than potentially short in app training tips for advanced usage.
 
@@ -100,7 +101,21 @@ During an infusion the user must be able to:
 
 - Keep the app compatible with the current Flutter SDK declared in `ivgo/pubspec.yaml`.
 
-- Platform-specific notification implementation details for Android and iOS will be defined separately when implementation work begins.
+- Platform-specific notification implementation details for Android, iOS, Windows, and any eventual macOS desktop build will be defined separately when implementation work begins.
+
+## Project Structure And Naming
+
+- Keep the project lightweight and pragmatic. Do not introduce full clean architecture layering unless the app complexity clearly justifies it.
+- Use `ivgo/lib/domain/` for stateful business types and domain value objects.
+- Use `ivgo/lib/repositories/` for persistence boundaries and storage adapters.
+- Use `ivgo/lib/pages/` for screen-level orchestration and view composition.
+- Use `ivgo/lib/widgets/` for reusable presentation widgets.
+- Reserve `ivgo/lib/utils/` for pure helper functions or stateless utility code. Do not place stateful domain objects there.
+- The primary timer aggregate is `InfusionTimer` in `ivgo/lib/domain/infusion_timer.dart`. Treat it as a domain type, not a utility.
+- `InfusionCharacteristics` lives in `ivgo/lib/domain/infusion_characteristics.dart` and should be treated as a domain value object.
+- `ivgo/lib/repositories/infusion_timer_repository.dart` owns `shared_preferences` serialization and storage for timers. UI code should not encode or decode persisted timer state directly.
+- Restore reconciliation currently belongs to app orchestration, but storage concerns should stay in repositories and notification concerns should move into dedicated services when implemented.
+- Timers restored as already completed after downtime should enter the `recoveredOverdue` state, be highlighted in the UI, and remain completed if the user acknowledges the warning.
 
 ## Acceptance Criteria
 
@@ -144,4 +159,4 @@ for calculating the amount infused:
 
 ## Open Questions
 
-- Exact platform-specific implementation details for time-sensitive notifications, permission flows, and background execution on Android and iOS will need to be defined during implementation.
+- Exact platform-specific implementation details for time-sensitive notifications, permission flows, packaging, and background execution on Android, iOS, Windows, and any eventual macOS build will need to be defined during implementation.
