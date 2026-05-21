@@ -108,6 +108,38 @@ void main() {
     expect(find.text('Disclaimer will show on next app launch'), findsOneWidget);
   });
 
+  testWidgets('settings page shows license notices option', (WidgetTester tester) async {
+    await pumpAppWithSettings(
+      tester: tester,
+      firstLaunchRepository: FakeFirstLaunchRepository(initialSeen: true),
+    );
+
+    await tester.tap(find.byTooltip('Settings'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('License Notices'), findsOneWidget);
+    expect(
+      find.text('Open-source software licenses used by this app'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('tapping license notices opens the license page',
+      (WidgetTester tester) async {
+    await pumpAppWithSettings(
+      tester: tester,
+      firstLaunchRepository: FakeFirstLaunchRepository(initialSeen: true),
+    );
+
+    await tester.tap(find.byTooltip('Settings'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('License Notices'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Licenses'), findsOneWidget);
+  });
+
   testWidgets('settings page shows theme mode segmented control', (WidgetTester tester) async {
     final firstLaunchRepository = FakeFirstLaunchRepository(initialSeen: true);
     final themeRepository = FakeThemeRepository(initialThemeMode: ThemeMode.system);

@@ -48,6 +48,16 @@ class _SettingsPageState extends State<SettingsPage> {
     Navigator.of(context).pop();
   }
 
+  void _openLicenses() {
+    showLicensePage(
+      context: context,
+      applicationName: 'IV Go',
+      applicationVersion: '0.1.0',
+      applicationLegalese: 'Copyright (c) 2025, MegaByteMark\n'
+          'Licensed under the BSD 3-Clause License.',
+    );
+  }
+
   Future<void> _resetDisclaimer() async {
     setState(() {
       _isResettingDisclaimer = true;
@@ -139,6 +149,16 @@ class _SettingsPageState extends State<SettingsPage> {
                 ),
               ),
             ),
+          ),
+          const Divider(),
+          const _SectionHeader(title: 'About'),
+          ListTile(
+            leading: const Icon(Icons.description_outlined),
+            title: const Text('License Notices'),
+            subtitle:
+                const Text('Open-source software licenses used by this app'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: _openLicenses,
           ),
           const SizedBox(height: 16),
         ],
