@@ -5,13 +5,42 @@ import 'package:ivgo/pages/settings_page.dart';
 import 'package:ivgo/repositories/disclaimer_acceptance_repository.dart';
 import 'package:ivgo/repositories/first_launch_repository.dart';
 import 'package:ivgo/repositories/theme_repository.dart';
+import 'package:url_launcher_platform_interface/link.dart';
+import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
 
 import 'fakes/fake_disclaimer_acceptance_repository.dart';
 import 'fakes/fake_first_launch_repository.dart';
 import 'fakes/fake_notification_service.dart';
 import 'fakes/fake_theme_repository.dart';
 
+class FakeUrlLauncher extends UrlLauncherPlatform {
+  bool didCallLaunchUrl = false;
+  String? launchedUrl;
+
+  @override
+  LinkDelegate? get linkDelegate => null;
+
+  @override
+  Future<bool> launchUrl(String url, LaunchOptions options) async {
+    didCallLaunchUrl = true;
+    launchedUrl = url;
+    return true;
+  }
+
+  @override
+  Future<bool> canLaunch(String url) async => true;
+
+  @override
+  Future<bool> closeWebView() async => true;
+}
+
 void main() {
+  late FakeUrlLauncher fakeUrlLauncher;
+
+  setUp(() {
+    fakeUrlLauncher = FakeUrlLauncher();
+    UrlLauncherPlatform.instance = fakeUrlLauncher;
+  });
   Future<void> pumpAppWithSettings({
     required WidgetTester tester,
     required FirstLaunchRepository firstLaunchRepository,
@@ -122,6 +151,37 @@ void main() {
       find.text('Open-source software licenses used by this app'),
       findsOneWidget,
     );
+  });
+
+  testWidgets('settings page shows report an issue option', (WidgetTester tester) async {
+    await pumpAppWithSettings(
+      tester: tester,
+      firstLaunchRepository: FakeFirstLaunchRepository(initialSeen: true),
+    );
+
+    await tester.tap(find.byTooltip('Settings'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Report an Issue'), findsOneWidget);
+    expect(
+      find.text('Open the GitHub issue tracker to report a problem or suggest a feature'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('tapping report an issue opens the GitHub issues URL', (WidgetTester tester) async {
+    await pumpAppWithSettings(
+      tester: tester,
+      firstLaunchRepository: FakeFirstLaunchRepository(initialSeen: true),
+    );
+
+    await tester.tap(find.byTooltip('Settings'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Report an Issue'));
+
+    expect(fakeUrlLauncher.didCallLaunchUrl, isTrue);
+    expect(fakeUrlLauncher.launchedUrl, 'https://github.com/MegaByteMark/iv-go/issues');
   });
 
   testWidgets('tapping license notices opens the license page',

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:ivgo/repositories/disclaimer_acceptance_repository.dart';
 import 'package:ivgo/repositories/first_launch_repository.dart';
 import 'package:ivgo/repositories/theme_repository.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({
@@ -46,6 +47,23 @@ class _SettingsPageState extends State<SettingsPage> {
     );
 
     Navigator.of(context).pop();
+  }
+
+  Future<void> _openReportIssues() async {
+    final Uri url = Uri.parse('https://github.com/MegaByteMark/iv-go/issues');
+    final bool launched = await launchUrl(url, mode: LaunchMode.externalApplication);
+
+    if (!mounted) {
+      return;
+    }
+
+    if (!launched) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Could not open the browser. Please navigate to https://github.com/MegaByteMark/iv-go/issues manually.'),
+        ),
+      );
+    }
   }
 
   void _openLicenses() {
@@ -152,6 +170,13 @@ class _SettingsPageState extends State<SettingsPage> {
           ),
           const Divider(),
           const _SectionHeader(title: 'About'),
+          ListTile(
+            leading: const Icon(Icons.bug_report_outlined),
+            title: const Text('Report an Issue'),
+            subtitle: const Text('Open the GitHub issue tracker to report a problem or suggest a feature'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: _openReportIssues,
+          ),
           ListTile(
             leading: const Icon(Icons.description_outlined),
             title: const Text('License Notices'),
