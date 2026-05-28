@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter/widgets.dart';
+import 'package:ivgo/application/infusion_timer_filter.dart';
+import 'package:ivgo/application/infusion_timer_status_filter.dart';
 import 'package:ivgo/domain/infusion_characteristics.dart';
 import 'package:ivgo/domain/infusion_timer.dart';
 import 'package:ivgo/services/lifecycle_coordinator.dart';
@@ -26,6 +28,39 @@ class InfusionListController {
   List<InfusionTimer> _cachedTimers = <InfusionTimer>[];
 
   ReadonlySignal<List<InfusionTimer>> get infusionTimers => _infusionTimers;
+  final Signal<InfusionTimerFilter> _activeFilter = signal(InfusionTimerFilter());
+  late final filteredInfusionTimers = computed(() {
+    final timers = _infusionTimers.value;
+    final filter = _activeFilter.value;
+
+    var results = timers.where((t) {
+      bool includeTimer;
+
+      includeTimer = true;
+
+      if (filter.isActive) {
+        if (filter.isStatusActive) {
+          if (filter.statusFilter == InfusionTimerStatusFilter.running) {
+            includeTimer = t.isRunning;
+          } else if (filter.statusFilter == InfusionTimerStatusFilter.paused) {
+            includeTimer = t.isPaused;
+          } else if (filter.statusFilter == InfusionTimerStatusFilter.ended) {
+            includeTimer = t.isEnded;
+          } else {
+            includeTimer = false;
+          }
+        }
+
+        if (filter.isTextActive) {
+          includeTimer = t.title.toLowerCase().contains(filter.textFilter);
+        }
+      }
+
+      return includeTimer;
+    });
+
+    return results;
+  });
 
   List<InfusionTimer> get currentTimers => _infusionTimers.value;
 
